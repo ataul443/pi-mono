@@ -39,6 +39,7 @@
 		"prepublishOnly": "npm run clean && npm run build"
 	},
 	"dependencies": {
+		"@anthropic-ai/sdk": "^0.52.0",
 		"@mariozechner/jiti": "^2.6.2",
 		"@mariozechner/pi-agent-core": "^0.65.1",
 		"@mariozechner/pi-ai": "^0.65.1",

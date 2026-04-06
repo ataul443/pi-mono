@@ -197,6 +197,15 @@ async function runLoop(
 				return;
 			}
 
+			// Server tool pause: API paused a long-running server-side tool execution.
+			// Continue the loop to resubmit and let the API resume.
+			if (message.stopReason === "pauseTurn") {
+				await emit({ type: "turn_end", message, toolResults: [] });
+				hasMoreToolCalls = true;
+				pendingMessages = (await config.getSteeringMessages?.()) || [];
+				continue;
+			}
+
 			// Check for tool calls
 			const toolCalls = message.content.filter((c) => c.type === "toolCall");
 			hasMoreToolCalls = toolCalls.length > 0;
@@ -291,6 +300,7 @@ async function streamAssistantResponse(
 			case "toolcall_start":
 			case "toolcall_delta":
 			case "toolcall_end":
+			case "server_tool":
 				if (partialMessage) {
 					partialMessage = event.partial;
 					context.messages[context.messages.length - 1] = partialMessage;

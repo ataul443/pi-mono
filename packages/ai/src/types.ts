@@ -103,6 +103,11 @@ export interface StreamOptions {
 	 * For example, Anthropic uses `user_id` for abuse tracking and rate limiting.
 	 */
 	metadata?: Record<string, unknown>;
+	/**
+	 * Anthropic server tools to include in the request (e.g., web_search, web_fetch).
+	 * Ignored by non-Anthropic providers.
+	 */
+	serverTools?: unknown[];
 }
 
 export type ProviderStreamOptions = StreamOptions & Record<string, unknown>;
@@ -164,6 +169,44 @@ export interface ToolCall {
 	thoughtSignature?: string; // Google-specific: opaque signature for reusing thought context
 }
 
+// ============================================================================
+// Server Tool Types (Anthropic server-executed tools: web search, web fetch)
+// ============================================================================
+
+/** Represents a server_tool_use content block from Anthropic's API. */
+export interface ServerToolUseContent {
+	type: "serverToolUse";
+	id: string;
+	name: string; // e.g., "web_search", "web_fetch"
+	input: Record<string, any>;
+}
+
+/** A single web search result. */
+export interface WebSearchResult {
+	url: string;
+	title: string;
+	encryptedContent: string;
+	pageAge?: string;
+}
+
+/** Represents a web_search_tool_result content block. */
+export interface WebSearchToolResult {
+	type: "webSearchToolResult";
+	toolUseId: string;
+	results: WebSearchResult[];
+	error?: { errorCode: string };
+}
+
+/** Represents a web_fetch_tool_result content block. */
+export interface WebFetchToolResult {
+	type: "webFetchToolResult";
+	toolUseId: string;
+	url?: string;
+	retrievedAt?: string;
+	content?: unknown; // document block (text or base64 PDF)
+	error?: { errorCode: string };
+}
+
 export interface Usage {
 	input: number;
 	output: number;
@@ -179,7 +222,7 @@ export interface Usage {
 	};
 }
 
-export type StopReason = "stop" | "length" | "toolUse" | "error" | "aborted";
+export type StopReason = "stop" | "length" | "toolUse" | "pauseTurn" | "error" | "aborted";
 
 export interface UserMessage {
 	role: "user";
@@ -187,9 +230,11 @@ export interface UserMessage {
 	timestamp: number; // Unix timestamp in milliseconds
 }
 
+export type ServerToolContent = ServerToolUseContent | WebSearchToolResult | WebFetchToolResult;
+
 export interface AssistantMessage {
 	role: "assistant";
-	content: (TextContent | ThinkingContent | ToolCall)[];
+	content: (TextContent | ThinkingContent | ToolCall | ServerToolContent)[];
 	api: Api;
 	provider: Provider;
 	model: string;
@@ -245,7 +290,12 @@ export type AssistantMessageEvent =
 	| { type: "toolcall_start"; contentIndex: number; partial: AssistantMessage }
 	| { type: "toolcall_delta"; contentIndex: number; delta: string; partial: AssistantMessage }
 	| { type: "toolcall_end"; contentIndex: number; toolCall: ToolCall; partial: AssistantMessage }
-	| { type: "done"; reason: Extract<StopReason, "stop" | "length" | "toolUse">; message: AssistantMessage }
+	| { type: "server_tool"; contentIndex: number; content: ServerToolContent; partial: AssistantMessage }
+	| {
+			type: "done";
+			reason: Extract<StopReason, "stop" | "length" | "toolUse" | "pauseTurn">;
+			message: AssistantMessage;
+	  }
 	| { type: "error"; reason: Extract<StopReason, "aborted" | "error">; error: AssistantMessage };
 
 /**

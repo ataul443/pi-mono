@@ -101,28 +101,28 @@ export type { Skill } from "./skills.js";
 export type { Tool } from "./tools/index.js";
 
 export {
-	// Pre-built tools (use process.cwd())
-	readTool,
-	bashTool,
-	editTool,
-	writeTool,
-	grepTool,
-	findTool,
-	lsTool,
-	codingTools,
-	readOnlyTools,
 	allTools as allBuiltInTools,
-	withFileMutationQueue,
+	bashTool,
+	codingTools,
+	createBashTool,
 	// Tool factories (for custom cwd)
 	createCodingTools,
+	createEditTool,
+	createFindTool,
+	createGrepTool,
+	createLsTool,
 	createReadOnlyTools,
 	createReadTool,
-	createBashTool,
-	createEditTool,
 	createWriteTool,
-	createGrepTool,
-	createFindTool,
-	createLsTool,
+	editTool,
+	findTool,
+	grepTool,
+	lsTool,
+	readOnlyTools,
+	// Pre-built tools (use process.cwd())
+	readTool,
+	withFileMutationQueue,
+	writeTool,
 };
 
 // Helper Functions
@@ -301,10 +301,19 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			if (!auth.ok) {
 				throw new Error(auth.error);
 			}
+			// Inject Anthropic server tools (web search, web fetch) for anthropic-messages API
+			const serverTools =
+				model.api === "anthropic-messages"
+					? [
+							{ type: "web_search_20250305" as const, name: "web_search" as const },
+							{ type: "web_fetch_20250910" as const, name: "web_fetch" as const },
+						]
+					: undefined;
 			return streamSimple(model, context, {
 				...options,
 				apiKey: auth.apiKey,
 				headers: auth.headers || options?.headers ? { ...auth.headers, ...options?.headers } : undefined,
+				...(serverTools ? { serverTools } : {}),
 			});
 		},
 		onPayload: async (payload, _model) => {

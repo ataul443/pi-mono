@@ -3,6 +3,10 @@ import type {
 	ContentBlockParam,
 	MessageCreateParamsStreaming,
 	MessageParam,
+	ServerToolUseBlock,
+	WebFetchBlock,
+	WebFetchToolResultBlock,
+	WebSearchToolResultBlock,
 } from "@anthropic-ai/sdk/resources/messages.js";
 import { getEnvApiKey } from "../env-api-keys.js";
 import { calculateCost } from "../models.js";
@@ -14,6 +18,7 @@ import type {
 	ImageContent,
 	Message,
 	Model,
+	ServerToolUseContent,
 	SimpleStreamOptions,
 	StopReason,
 	StreamFunction,
@@ -23,6 +28,8 @@ import type {
 	Tool,
 	ToolCall,
 	ToolResultMessage,
+	WebFetchToolResult,
+	WebSearchToolResult,
 } from "../types.js";
 import { AssistantMessageEventStream } from "../utils/event-stream.js";
 import { parseStreamingJson } from "../utils/json-parse.js";
@@ -259,7 +266,14 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 			const anthropicStream = client.messages.stream({ ...params, stream: true }, { signal: options?.signal });
 			stream.push({ type: "start", partial: output });
 
-			type Block = (ThinkingContent | TextContent | (ToolCall & { partialJson: string })) & { index: number };
+			type Block = (
+				| ThinkingContent
+				| TextContent
+				| (ToolCall & { partialJson: string })
+				| (ServerToolUseContent & { partialJson: string })
+				| WebSearchToolResult
+				| WebFetchToolResult
+			) & { index: number };
 			const blocks = output.content as Block[];
 
 			for await (const event of anthropicStream) {
@@ -316,6 +330,43 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 						};
 						output.content.push(block);
 						stream.push({ type: "toolcall_start", contentIndex: output.content.length - 1, partial: output });
+					} else if (event.content_block.type === "server_tool_use") {
+						const cb = event.content_block as ServerToolUseBlock;
+						const block: Block = {
+							type: "serverToolUse",
+							id: cb.id,
+							name: cb.name,
+							input: (cb.input as Record<string, any>) ?? {},
+							partialJson: "",
+							index: event.index,
+						};
+						output.content.push(block);
+						stream.push({
+							type: "server_tool",
+							contentIndex: output.content.length - 1,
+							content: block,
+							partial: output,
+						});
+					} else if (event.content_block.type === "web_search_tool_result") {
+						const cb = event.content_block as WebSearchToolResultBlock;
+						const block: Block = parseWebSearchToolResult(cb, event.index);
+						output.content.push(block);
+						stream.push({
+							type: "server_tool",
+							contentIndex: output.content.length - 1,
+							content: block,
+							partial: output,
+						});
+					} else if (event.content_block.type === "web_fetch_tool_result") {
+						const cb = event.content_block as WebFetchToolResultBlock;
+						const block: Block = parseWebFetchToolResult(cb, event.index);
+						output.content.push(block);
+						stream.push({
+							type: "server_tool",
+							contentIndex: output.content.length - 1,
+							content: block,
+							partial: output,
+						});
 					}
 				} else if (event.type === "content_block_delta") {
 					if (event.delta.type === "text_delta") {
@@ -354,6 +405,11 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 								delta: event.delta.partial_json,
 								partial: output,
 							});
+						} else if (block && block.type === "serverToolUse") {
+							(block as ServerToolUseContent & { partialJson: string }).partialJson += event.delta.partial_json;
+							block.input = parseStreamingJson(
+								(block as ServerToolUseContent & { partialJson: string }).partialJson,
+							);
 						}
 					} else if (event.delta.type === "signature_delta") {
 						const index = blocks.findIndex((b) => b.index === event.index);
@@ -391,6 +447,10 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 								toolCall: block,
 								partial: output,
 							});
+						} else if (block.type === "serverToolUse") {
+							const stBlock = block as ServerToolUseContent & { partialJson: string };
+							stBlock.input = parseStreamingJson(stBlock.partialJson);
+							delete (stBlock as any).partialJson;
 						}
 					}
 				} else if (event.type === "message_delta") {
@@ -650,8 +710,10 @@ function buildParams(
 		params.temperature = options.temperature;
 	}
 
-	if (context.tools) {
-		params.tools = convertTools(context.tools, isOAuthToken);
+	if (context.tools || options?.serverTools?.length) {
+		const userTools = context.tools ? convertTools(context.tools, isOAuthToken) : [];
+		const serverToolDefs = (options?.serverTools ?? []) as Anthropic.Messages.ToolUnion[];
+		params.tools = [...userTools, ...serverToolDefs];
 	}
 
 	// Configure thinking mode: adaptive (Opus 4.6 and Sonnet 4.6),
@@ -794,6 +856,58 @@ function convertMessages(
 						name: isOAuthToken ? toClaudeCodeName(block.name) : block.name,
 						input: block.arguments ?? {},
 					});
+				} else if (block.type === "serverToolUse") {
+					blocks.push({
+						type: "server_tool_use",
+						id: block.id,
+						name: block.name as "web_search" | "web_fetch",
+						input: block.input,
+					} as ContentBlockParam);
+				} else if (block.type === "webSearchToolResult") {
+					if (block.error) {
+						blocks.push({
+							type: "web_search_tool_result",
+							tool_use_id: block.toolUseId,
+							content: {
+								type: "web_search_tool_result_error",
+								error_code: block.error.errorCode as any,
+							},
+						} as ContentBlockParam);
+					} else {
+						blocks.push({
+							type: "web_search_tool_result",
+							tool_use_id: block.toolUseId,
+							content: block.results.map((r) => ({
+								type: "web_search_result" as const,
+								url: r.url,
+								title: r.title,
+								encrypted_content: r.encryptedContent,
+								...(r.pageAge ? { page_age: r.pageAge } : {}),
+							})),
+						} as ContentBlockParam);
+					}
+				} else if (block.type === "webFetchToolResult") {
+					if (block.error) {
+						blocks.push({
+							type: "web_fetch_tool_result",
+							tool_use_id: block.toolUseId,
+							content: {
+								type: "web_fetch_tool_result_error",
+								error_code: block.error.errorCode as any,
+							},
+						} as ContentBlockParam);
+					} else {
+						blocks.push({
+							type: "web_fetch_tool_result",
+							tool_use_id: block.toolUseId,
+							content: {
+								type: "web_fetch_result" as const,
+								url: block.url ?? "",
+								content: block.content as any,
+								retrieved_at: block.retrievedAt ?? null,
+							},
+						} as ContentBlockParam);
+					}
 				}
 			}
 			if (blocks.length === 0) continue;
@@ -882,6 +996,53 @@ function convertTools(tools: Tool[], isOAuthToken: boolean): Anthropic.Messages.
 	});
 }
 
+function parseWebSearchToolResult(
+	cb: WebSearchToolResultBlock,
+	index: number,
+): WebSearchToolResult & { index: number } {
+	if (Array.isArray(cb.content)) {
+		return {
+			type: "webSearchToolResult",
+			toolUseId: cb.tool_use_id,
+			results: cb.content.map((r) => ({
+				url: r.url,
+				title: r.title,
+				encryptedContent: r.encrypted_content,
+				pageAge: r.page_age ?? undefined,
+			})),
+			index,
+		};
+	}
+	// Error result
+	return {
+		type: "webSearchToolResult",
+		toolUseId: cb.tool_use_id,
+		results: [],
+		error: { errorCode: (cb.content as any).error_code ?? "unknown" },
+		index,
+	};
+}
+
+function parseWebFetchToolResult(cb: WebFetchToolResultBlock, index: number): WebFetchToolResult & { index: number } {
+	if (cb.content.type === "web_fetch_tool_result_error") {
+		return {
+			type: "webFetchToolResult",
+			toolUseId: cb.tool_use_id,
+			error: { errorCode: cb.content.error_code },
+			index,
+		};
+	}
+	const result = cb.content as WebFetchBlock;
+	return {
+		type: "webFetchToolResult",
+		toolUseId: cb.tool_use_id,
+		url: result.url,
+		retrievedAt: result.retrieved_at ?? undefined,
+		content: result.content,
+		index,
+	};
+}
+
 function mapStopReason(reason: Anthropic.Messages.StopReason | string): StopReason {
 	switch (reason) {
 		case "end_turn":
@@ -892,8 +1053,8 @@ function mapStopReason(reason: Anthropic.Messages.StopReason | string): StopReas
 			return "toolUse";
 		case "refusal":
 			return "error";
-		case "pause_turn": // Stop is good enough -> resubmit
-			return "stop";
+		case "pause_turn":
+			return "pauseTurn";
 		case "stop_sequence":
 			return "stop"; // We don't supply stop sequences, so this should never happen
 		case "sensitive": // Content flagged by safety filters (not yet in SDK types)

@@ -147,7 +147,7 @@ function contentToText(content: string | Array<TextContent | ImageContent>): str
 		.join("\n");
 }
 
-function assistantContentToText(content: Array<TextContent | ThinkingContent | ToolCall>): string {
+function assistantContentToText(content: AssistantMessage["content"]): string {
 	return content
 		.map((block) => {
 			if (block.type === "text") {
@@ -156,7 +156,11 @@ function assistantContentToText(content: Array<TextContent | ThinkingContent | T
 			if (block.type === "thinking") {
 				return block.thinking;
 			}
-			return `${block.name}:${JSON.stringify(block.arguments)}`;
+			if (block.type === "toolCall") {
+				return `${block.name}:${JSON.stringify(block.arguments)}`;
+			}
+			// Server tool content - minimal text representation
+			return `[${block.type}]`;
 		})
 		.join("\n");
 }
@@ -359,6 +363,12 @@ async function streamWithDeltas(
 				stream.push({ type: "text_delta", contentIndex: index, delta: chunk, partial: { ...partial } });
 			}
 			stream.push({ type: "text_end", contentIndex: index, content: block.text, partial: { ...partial } });
+			continue;
+		}
+
+		if (block.type !== "toolCall") {
+			// Skip server tool content types in faux provider
+			partial.content = [...partial.content, block];
 			continue;
 		}
 
