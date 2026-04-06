@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type {
+	CitationsDelta,
 	ContentBlockParam,
 	MessageCreateParamsStreaming,
 	MessageParam,
@@ -14,6 +15,7 @@ import type {
 	Api,
 	AssistantMessage,
 	CacheRetention,
+	Citation,
 	Context,
 	ImageContent,
 	Message,
@@ -410,6 +412,16 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 							block.input = parseStreamingJson(
 								(block as ServerToolUseContent & { partialJson: string }).partialJson,
 							);
+						}
+					} else if (event.delta.type === "citations_delta") {
+						const index = blocks.findIndex((b) => b.index === event.index);
+						const block = blocks[index];
+						if (block && block.type === "text") {
+							const citation = convertCitation((event.delta as CitationsDelta).citation);
+							if (citation) {
+								if (!block.citations) block.citations = [];
+								block.citations.push(citation);
+							}
 						}
 					} else if (event.delta.type === "signature_delta") {
 						const index = blocks.findIndex((b) => b.index === event.index);
@@ -994,6 +1006,39 @@ function convertTools(tools: Tool[], isOAuthToken: boolean): Anthropic.Messages.
 			},
 		};
 	});
+}
+
+function convertCitation(raw: CitationsDelta["citation"]): Citation | undefined {
+	switch (raw.type) {
+		case "web_search_result_location":
+			return {
+				type: "web_search_result_location",
+				url: raw.url,
+				title: raw.title ?? undefined,
+				citedText: raw.cited_text,
+				encryptedIndex: raw.encrypted_index,
+			};
+		case "char_location":
+			return {
+				type: "char_location",
+				documentIndex: raw.document_index,
+				documentTitle: raw.document_title ?? undefined,
+				startCharIndex: raw.start_char_index,
+				endCharIndex: raw.end_char_index,
+				citedText: raw.cited_text,
+			};
+		case "page_location":
+			return {
+				type: "page_location",
+				documentIndex: raw.document_index,
+				documentTitle: raw.document_title ?? undefined,
+				startPageNumber: raw.start_page_number,
+				endPageNumber: raw.end_page_number,
+				citedText: raw.cited_text,
+			};
+		default:
+			return undefined;
+	}
 }
 
 function parseWebSearchToolResult(

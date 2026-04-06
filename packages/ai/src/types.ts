@@ -139,10 +139,43 @@ export interface TextSignatureV1 {
 	phase?: "commentary" | "final_answer";
 }
 
+/** Citation from a web search result. */
+export interface WebSearchCitation {
+	type: "web_search_result_location";
+	url: string;
+	title?: string;
+	citedText: string;
+	encryptedIndex: string;
+}
+
+/** Citation from a fetched document (char-based location). */
+export interface CharLocationCitation {
+	type: "char_location";
+	documentIndex: number;
+	documentTitle?: string;
+	startCharIndex: number;
+	endCharIndex: number;
+	citedText: string;
+}
+
+/** Citation from a fetched PDF (page-based location). */
+export interface PageLocationCitation {
+	type: "page_location";
+	documentIndex: number;
+	documentTitle?: string;
+	startPageNumber: number;
+	endPageNumber: number;
+	citedText: string;
+}
+
+export type Citation = WebSearchCitation | CharLocationCitation | PageLocationCitation;
+
 export interface TextContent {
 	type: "text";
 	text: string;
 	textSignature?: string; // e.g., for OpenAI responses, message metadata (legacy id string or TextSignatureV1 JSON)
+	/** Citations for this text block. Present when web search or web fetch with citations is used. */
+	citations?: Citation[];
 }
 
 export interface ThinkingContent {
