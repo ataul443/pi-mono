@@ -119,6 +119,15 @@ function formatGrepResult(
 	return text;
 }
 
+const grepToolDescription = `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.
+
+- ALWAYS use Grep for search tasks. NEVER invoke grep or rg as a Bash command. The Grep tool has been optimized for correct permissions and access.
+- Supports full regex syntax (e.g., "log.*Error", "functions+w+")
+- Filter files with glob parameter (e.g., "*.js", "**/*.tsx")
+- Use taskCreate tool for open-ended searches requiring multiple rounds
+- Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use interface{} to find interface{} in Go code)
+- You can call multiple tools in a single response. It is always better to speculatively perform multiple searches in parallel if they are potentially useful.`;
+
 export function createGrepToolDefinition(
 	cwd: string,
 	options?: GrepToolOptions,
@@ -127,7 +136,7 @@ export function createGrepToolDefinition(
 	return {
 		name: "grep",
 		label: "grep",
-		description: `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.`,
+		description: grepToolDescription,
 		promptSnippet: "Search file contents for patterns (respects .gitignore)",
 		parameters: grepSchema,
 		async execute(

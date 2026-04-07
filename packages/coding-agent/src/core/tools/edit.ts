@@ -150,6 +150,16 @@ function formatEditResult(
 	return `\n${renderDiff(resultDiff, { filePath: rawPath ?? undefined })}`;
 }
 
+const editToolDescription = `Performs exact string replacements in files.
+
+- You must use the read tool at least once in the conversation before editing a file. This tool will error if you attempt an edit without reading the file.
+- When editing text from read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in oldText or newText.
+- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
+- Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
+- The edit will FAIL if oldText is not unique in the file. Provide a larger string with more surrounding context to make it unique.
+- Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits.
+- Do not include large unchanged regions just to connect distant changes.`;
+
 export function createEditToolDefinition(
 	cwd: string,
 	options?: EditToolOptions,
@@ -158,8 +168,7 @@ export function createEditToolDefinition(
 	return {
 		name: "edit",
 		label: "edit",
-		description:
-			"Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+		description: editToolDescription,
 		promptSnippet:
 			"Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
 		promptGuidelines: [

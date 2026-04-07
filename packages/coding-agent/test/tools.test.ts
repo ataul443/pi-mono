@@ -43,10 +43,14 @@ describe("Coding Agent Tools", () => {
 			writeFileSync(testFile, content);
 
 			const result = await readTool.execute("test-call-1", { path: testFile });
+			const output = getTextOutput(result);
 
-			expect(getTextOutput(result)).toBe(content);
+			// Output should have line numbers in cat -n format
+			expect(output).toContain("1\tHello, world!");
+			expect(output).toContain("2\tLine 2");
+			expect(output).toContain("3\tLine 3");
 			// No truncation message since file fits within limits
-			expect(getTextOutput(result)).not.toContain("Use offset=");
+			expect(output).not.toContain("Use offset=");
 			expect(result.details).toBeUndefined();
 		});
 
@@ -64,8 +68,9 @@ describe("Coding Agent Tools", () => {
 			const result = await readTool.execute("test-call-3", { path: testFile });
 			const output = getTextOutput(result);
 
-			expect(output).toContain("Line 1");
-			expect(output).toContain("Line 2000");
+			// Line numbers in cat -n format
+			expect(output).toMatch(/^\s*1\tLine 1$/m);
+			expect(output).toMatch(/^2000\tLine 2000$/m);
 			expect(output).not.toContain("Line 2001");
 			expect(output).toContain("[Showing lines 1-2000 of 2500. Use offset=2001 to continue.]");
 		});
@@ -92,9 +97,11 @@ describe("Coding Agent Tools", () => {
 			const result = await readTool.execute("test-call-5", { path: testFile, offset: 51 });
 			const output = getTextOutput(result);
 
-			expect(output).not.toContain("Line 50");
-			expect(output).toContain("Line 51");
-			expect(output).toContain("Line 100");
+			// Should not contain line 50 content
+			expect(output).not.toMatch(/\tLine 50$/);
+			// Should contain lines 51-100 with line numbers
+			expect(output).toMatch(/\s*51\tLine 51/);
+			expect(output).toMatch(/100\tLine 100/);
 			// No truncation message since file fits within limits
 			expect(output).not.toContain("Use offset=");
 		});
@@ -107,8 +114,8 @@ describe("Coding Agent Tools", () => {
 			const result = await readTool.execute("test-call-6", { path: testFile, limit: 10 });
 			const output = getTextOutput(result);
 
-			expect(output).toContain("Line 1");
-			expect(output).toContain("Line 10");
+			expect(output).toMatch(/\s*1\tLine 1/);
+			expect(output).toMatch(/10\tLine 10/);
 			expect(output).not.toContain("Line 11");
 			expect(output).toContain("[90 more lines in file. Use offset=11 to continue.]");
 		});
@@ -125,9 +132,11 @@ describe("Coding Agent Tools", () => {
 			});
 			const output = getTextOutput(result);
 
-			expect(output).not.toContain("Line 40");
-			expect(output).toContain("Line 41");
-			expect(output).toContain("Line 60");
+			// Should not contain line 40 content
+			expect(output).not.toMatch(/\tLine 40$/);
+			// Should contain lines 41-60 with line numbers
+			expect(output).toMatch(/41\tLine 41/);
+			expect(output).toMatch(/60\tLine 60/);
 			expect(output).not.toContain("Line 61");
 			expect(output).toContain("[40 more lines in file. Use offset=61 to continue.]");
 		});

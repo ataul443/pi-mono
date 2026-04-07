@@ -52,6 +52,18 @@ export interface ReadToolOptions {
 	operations?: ReadOperations;
 }
 
+/**
+ * Prepend line numbers to text in cat -n format.
+ * Lines are numbered starting from `startLine` (1-indexed).
+ * Numbers are right-aligned to a consistent width with a tab separator.
+ */
+function addLineNumbers(text: string, startLine: number): string {
+	const lines = text.split("\n");
+	const lastLineNum = startLine + lines.length - 1;
+	const width = String(lastLineNum).length;
+	return lines.map((line, i) => `${String(startLine + i).padStart(width)}\t${line}`).join("\n");
+}
+
 function formatReadCall(
 	args: { path?: string; file_path?: string; offset?: number; limit?: number } | undefined,
 	theme: typeof import("../../modes/interactive/theme/theme.js").theme,
@@ -111,6 +123,17 @@ function formatReadResult(
 	return text;
 }
 
+const readToolDescription = `Reads a file from the local filesystem. You can access any file directly by using this tool. Assume this tool is able to read all files on the machine. If the User provides a path to a file assume that path is valid. It is okay to read a file that does not exist; an error will be returned. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).
+
+- The path parameter must be an absolute path, not a relative path
+- By default, it reads up to ${DEFAULT_MAX_LINES} lines starting from the beginning of the file
+- When you already know which part of the file you need, only read that part. This can be important for larger files.
+- Results are returned using cat -n format, with line numbers starting at 1
+- This tool allows reading images (e.g., PNG, JPG, GIF, WEBP). When reading an image file the contents are presented visually as the model is multimodal.
+- This tool can only read files, not directories. To list a directory, use the ls tool or bash.
+- You can call multiple tools in a single response. It is always better to speculatively read multiple potentially useful files in parallel.
+- You will regularly be asked to read screenshots. If the user provides a path to a screenshot, ALWAYS use this tool to view the file at the path. This tool will work with all temporary file paths.`;
+
 export function createReadToolDefinition(
 	cwd: string,
 	options?: ReadToolOptions,
@@ -120,7 +143,7 @@ export function createReadToolDefinition(
 	return {
 		name: "read",
 		label: "read",
-		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
+		description: readToolDescription,
 		promptSnippet: "Read file contents",
 		promptGuidelines: ["Use read to examine files instead of cat or sed."],
 		parameters: readSchema,
@@ -217,7 +240,7 @@ export function createReadToolDefinition(
 									// Truncation occurred. Build an actionable continuation notice.
 									const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
 									const nextOffset = endLineDisplay + 1;
-									outputText = truncation.content;
+									outputText = addLineNumbers(truncation.content, startLineDisplay);
 									if (truncation.truncatedBy === "lines") {
 										outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`;
 									} else {
@@ -228,10 +251,10 @@ export function createReadToolDefinition(
 									// User-specified limit stopped early, but the file still has more content.
 									const remaining = allLines.length - (startLine + userLimitedLines);
 									const nextOffset = startLine + userLimitedLines + 1;
-									outputText = `${truncation.content}\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`;
+									outputText = `${addLineNumbers(truncation.content, startLineDisplay)}\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`;
 								} else {
 									// No truncation and no remaining user-limited content.
-									outputText = truncation.content;
+									outputText = addLineNumbers(truncation.content, startLineDisplay);
 								}
 								content = [{ type: "text", text: outputText }];
 							}

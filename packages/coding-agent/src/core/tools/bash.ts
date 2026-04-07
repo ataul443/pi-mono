@@ -259,6 +259,40 @@ function rebuildBashResultRenderComponent(
 	}
 }
 
+const bashToolDescription = `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).
+If truncated, full output is saved to a temp file.
+
+IMPORTANT: Avoid using this tool to run (bash find), (bash grep), cat, head, tail, sed, awk, or echo commands, unless explicitly instructed or after you have verified that a dedicated tool cannot accomplish your task.
+Instead, use the appropriate dedicated tool as this will provide a much better experience for the user:
+
+- File search: Use find tool (NOT ls)
+- Content search: Use grep tool (NOT rg)
+- Read files: Use read tool (NOT cat/head/tail)
+- Edit files: Use edit tool (NOT sed/awk)
+- Write files: Use write tool (NOT echo >/cat <<EOF)
+- Communication: Output text directly (NOT echo/printf). While the bash tool can do similar things, it's better to use the built-in tools as they provide a better user experience and make it easier to review tool calls and give permission.
+
+**Instructions**
+- If your command will create new directories or files, first use this tool to run ls to verify the parent directory exists and is the correct location.
+- Always quote file paths that contain spaces with double quotes in your command (e.g., cd "path with spaces/file.txt")
+- Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of cd. You may use cd if the User explicitly requests it.
+- You may specify an optional timeout in seconds (up to 600s / 10 minutes). By default, your command will timeout after 120s (2 minutes).
+- Write a clear, concise description of what your command does. For simple commands, keep it brief (5-10 words). For complex commands (piped commands, obscure flags, or anything hard to understand at a glance), include enough context so that the user can understand what your command will do.
+- When issuing multiple commands:
+  - If the commands are independent and can run in parallel, make multiple Bash tool calls in a single message. Example: if you need to run "git status" and "git diff", send a single message with two Bash tool calls in parallel.
+  - If the commands depend on each other and must run sequentially, use a single Bash call with '&&' to chain them together.
+  - Use ';' only when you need to run commands sequentially but don't care if earlier commands fail.
+- DO NOT use newlines to separate commands (newlines are ok in quoted strings).
+- For git commands:
+  - Prefer to create a new commit rather than amending an existing commit.
+  - Before running destructive operations (e.g., git reset --hard, git push --force, git checkout --), consider whether there is a safer alternative that achieves the same goal. Only use destructive operations when they are truly the best approach.
+  - Never skip hooks (--no-verify) or bypass signing (--no-gpg-sign, -c commit.gpgsign=false) unless the user has explicitly asked for it. If a hook fails, investigate and fix the underlying issue.
+- Avoid unnecessary sleep commands:
+  - Do not sleep between commands that can run immediately — just run them.
+  - Do not retry failing commands in a sleep loop — diagnose the root cause.
+  - If you must poll an external process, use a check command (e.g. gh run view) rather than sleeping first.
+  - If you must sleep, keep the duration short (1-5 seconds) to avoid blocking the user.`;
+
 export function createBashToolDefinition(
 	cwd: string,
 	options?: BashToolOptions,
@@ -269,8 +303,8 @@ export function createBashToolDefinition(
 	return {
 		name: "bash",
 		label: "bash",
-		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
-		promptSnippet: "Execute bash commands (ls, grep, find, etc.)",
+		description: bashToolDescription,
+		promptSnippet: "Execute bash commands (ls etc.)",
 		parameters: bashSchema,
 		async execute(
 			_toolCallId,

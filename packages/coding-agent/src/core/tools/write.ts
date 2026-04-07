@@ -178,6 +178,14 @@ function formatWriteResult(
 	return `\n${theme.fg("error", output)}`;
 }
 
+const writeToolDescription = `Writes a file to the local filesystem. Automatically creates parent directories.
+
+- This tool will overwrite the existing file if there is one at the provided path.
+- If this is an existing file, you MUST use the read tool first to read the file's contents. This tool will fail if you did not read the file first.
+- Prefer the edit tool for modifying existing files — it only sends the diff. Only use this tool to create new files or for complete rewrites.
+- NEVER create documentation files (*.md) or README files unless explicitly requested by the user.
+- Only use emojis if the user explicitly requests it. Avoid writing emojis to files unless asked.`;
+
 export function createWriteToolDefinition(
 	cwd: string,
 	options?: WriteToolOptions,
@@ -186,8 +194,7 @@ export function createWriteToolDefinition(
 	return {
 		name: "write",
 		label: "write",
-		description:
-			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+		description: writeToolDescription,
 		promptSnippet: "Create or overwrite files",
 		promptGuidelines: ["Use write only for new files or complete rewrites."],
 		parameters: writeSchema,

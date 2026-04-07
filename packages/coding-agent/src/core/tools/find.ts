@@ -109,6 +109,14 @@ function formatFindResult(
 	return text;
 }
 
+const findToolDescription = `Fast file pattern matching tool that works with any codebase size. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).
+
+- Supports glob patterns like "*.js", "**/*.json", or "src/**/*.spec.ts"
+- Returns matching file paths relative to the search directory
+- Use this tool when you need to find files by name patterns
+- When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the taskCreate tool instead
+- You can call multiple tools in a single response. It is always better to speculatively perform multiple searches in parallel if they are potentially useful.`;
+
 export function createFindToolDefinition(
 	cwd: string,
 	options?: FindToolOptions,
@@ -117,7 +125,7 @@ export function createFindToolDefinition(
 	return {
 		name: "find",
 		label: "find",
-		description: `Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
+		description: findToolDescription,
 		promptSnippet: "Find files by glob pattern (respects .gitignore)",
 		parameters: findSchema,
 		async execute(
