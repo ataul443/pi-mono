@@ -26,6 +26,10 @@ function getTempFilePath(): string {
 
 const bashSchema = Type.Object({
 	command: Type.String({ description: "Bash command to execute" }),
+	description: Type.String({
+		description:
+			'Clear, concise description of what this command does in active voice. Never use words like "complex" or "risk" in the description - just describe what it does. For simple commands (git, npm, standard CLI tools), keep it brief (5-10 words). For commands that are harder to parse at a glance (piped commands, obscure flags, etc.), add enough context to clarify what it does.',
+	}),
 	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
 });
 
@@ -277,7 +281,6 @@ Instead, use the appropriate dedicated tool as this will provide a much better e
 - Always quote file paths that contain spaces with double quotes in your command (e.g., cd "path with spaces/file.txt")
 - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of cd. You may use cd if the User explicitly requests it.
 - You may specify an optional timeout in seconds (up to 600s / 10 minutes). By default, your command will timeout after 120s (2 minutes).
-- Write a clear, concise description of what your command does. For simple commands, keep it brief (5-10 words). For complex commands (piped commands, obscure flags, or anything hard to understand at a glance), include enough context so that the user can understand what your command will do.
 - When issuing multiple commands:
   - If the commands are independent and can run in parallel, make multiple Bash tool calls in a single message. Example: if you need to run "git status" and "git diff", send a single message with two Bash tool calls in parallel.
   - If the commands depend on each other and must run sequentially, use a single Bash call with '&&' to chain them together.
@@ -308,7 +311,7 @@ export function createBashToolDefinition(
 		parameters: bashSchema,
 		async execute(
 			_toolCallId,
-			{ command, timeout }: { command: string; timeout?: number },
+			{ command, timeout }: { command: string; description: string; timeout?: number },
 			signal?: AbortSignal,
 			onUpdate?,
 			_ctx?,

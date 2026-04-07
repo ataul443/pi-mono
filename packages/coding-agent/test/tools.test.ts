@@ -369,22 +369,25 @@ describe("Coding Agent Tools", () => {
 
 	describe("bash tool", () => {
 		it("should execute simple commands", async () => {
-			const result = await bashTool.execute("test-call-8", { command: "echo 'test output'" });
+			const result = await bashTool.execute("test-call-8", {
+				command: "echo 'test output'",
+				description: "Echo test output",
+			});
 
 			expect(getTextOutput(result)).toContain("test output");
 			expect(result.details).toBeUndefined();
 		});
 
 		it("should handle command errors", async () => {
-			await expect(bashTool.execute("test-call-9", { command: "exit 1" })).rejects.toThrow(
-				/(Command failed|code 1)/,
-			);
+			await expect(
+				bashTool.execute("test-call-9", { command: "exit 1", description: "Exit with error" }),
+			).rejects.toThrow(/(Command failed|code 1)/);
 		});
 
 		it("should respect timeout", async () => {
-			await expect(bashTool.execute("test-call-10", { command: "sleep 5", timeout: 1 })).rejects.toThrow(
-				/timed out/i,
-			);
+			await expect(
+				bashTool.execute("test-call-10", { command: "sleep 5", description: "Sleep for 5 seconds", timeout: 1 }),
+			).rejects.toThrow(/timed out/i);
 		});
 
 		it("should throw error when cwd does not exist", async () => {
@@ -392,9 +395,9 @@ describe("Coding Agent Tools", () => {
 
 			const bashToolWithBadCwd = createBashTool(nonexistentCwd);
 
-			await expect(bashToolWithBadCwd.execute("test-call-11", { command: "echo test" })).rejects.toThrow(
-				/Working directory does not exist/,
-			);
+			await expect(
+				bashToolWithBadCwd.execute("test-call-11", { command: "echo test", description: "Echo test" }),
+			).rejects.toThrow(/Working directory does not exist/);
 		});
 
 		it("should handle process spawn errors", async () => {
@@ -405,7 +408,9 @@ describe("Coding Agent Tools", () => {
 
 			const bashWithBadShell = createBashTool(testDir);
 
-			await expect(bashWithBadShell.execute("test-call-12", { command: "echo test" })).rejects.toThrow(/ENOENT/);
+			await expect(
+				bashWithBadShell.execute("test-call-12", { command: "echo test", description: "Echo test" }),
+			).rejects.toThrow(/ENOENT/);
 		});
 
 		it("should prepend command prefix when configured", async () => {
@@ -413,7 +418,10 @@ describe("Coding Agent Tools", () => {
 				commandPrefix: "export TEST_VAR=hello",
 			});
 
-			const result = await bashWithPrefix.execute("test-prefix-1", { command: "echo $TEST_VAR" });
+			const result = await bashWithPrefix.execute("test-prefix-1", {
+				command: "echo $TEST_VAR",
+				description: "Echo TEST_VAR",
+			});
 			expect(getTextOutput(result).trim()).toBe("hello");
 		});
 
@@ -422,14 +430,20 @@ describe("Coding Agent Tools", () => {
 				commandPrefix: "echo prefix-output",
 			});
 
-			const result = await bashWithPrefix.execute("test-prefix-2", { command: "echo command-output" });
+			const result = await bashWithPrefix.execute("test-prefix-2", {
+				command: "echo command-output",
+				description: "Echo command output",
+			});
 			expect(getTextOutput(result).trim()).toBe("prefix-output\ncommand-output");
 		});
 
 		it("should work without command prefix", async () => {
 			const bashWithoutPrefix = createBashTool(testDir, {});
 
-			const result = await bashWithoutPrefix.execute("test-prefix-3", { command: "echo no-prefix" });
+			const result = await bashWithoutPrefix.execute("test-prefix-3", {
+				command: "echo no-prefix",
+				description: "Echo no-prefix",
+			});
 			expect(getTextOutput(result).trim()).toBe("no-prefix");
 		});
 
@@ -455,7 +469,10 @@ describe("Coding Agent Tools", () => {
 
 		it("should persist full output when truncation happens by line count only", async () => {
 			const bash = createBashTool(testDir);
-			const result = await bash.execute("test-call-line-truncation", { command: "seq 3000" });
+			const result = await bash.execute("test-call-line-truncation", {
+				command: "seq 3000",
+				description: "Generate sequence 1-3000",
+			});
 			const output = getTextOutput(result);
 			const fullOutputPath = result.details?.fullOutputPath;
 

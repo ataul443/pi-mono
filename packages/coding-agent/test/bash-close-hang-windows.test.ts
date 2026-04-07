@@ -107,9 +107,13 @@ describe.skipIf(process.platform !== "win32")("Windows child-process close handl
 		const bashTool = createBashTool(testDir);
 
 		try {
-			const result = await withTimeout(bashTool.execute("test-call", { command }, controller.signal), 3000, () => {
-				controller.abort();
-			});
+			const result = await withTimeout(
+				bashTool.execute("test-call", { command, description: "Run inherited stdio test" }, controller.signal),
+				3000,
+				() => {
+					controller.abort();
+				},
+			);
 
 			expect(getTextOutput(result)).toContain("child-exiting");
 		} finally {
