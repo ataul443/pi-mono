@@ -301,19 +301,20 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			if (!auth.ok) {
 				throw new Error(auth.error);
 			}
-			// Inject Anthropic server tools (web search, web fetch) for anthropic-messages API
+			// Inject Anthropic server tools (web search, web fetch) for anthropic-messages API.
+			// Respect setActiveTools: only include server tools that are in the active set.
+			const activeToolNames = new Set(agent.state.tools.map((t) => t.name));
+			const allServerTools = [
+				{ type: "web_search_20250305" as const, name: "web_search" as const },
+				{ type: "web_fetch_20250910" as const, name: "web_fetch" as const },
+			] as const;
 			const serverTools =
-				model.api === "anthropic-messages"
-					? [
-							{ type: "web_search_20250305" as const, name: "web_search" as const },
-							{ type: "web_fetch_20250910" as const, name: "web_fetch" as const },
-						]
-					: undefined;
+				model.api === "anthropic-messages" ? allServerTools.filter((t) => activeToolNames.has(t.name)) : undefined;
 			return streamSimple(model, context, {
 				...options,
 				apiKey: auth.apiKey,
 				headers: auth.headers || options?.headers ? { ...auth.headers, ...options?.headers } : undefined,
-				...(serverTools ? { serverTools } : {}),
+				...(serverTools?.length ? { serverTools } : {}),
 			});
 		},
 		onPayload: async (payload, _model) => {
