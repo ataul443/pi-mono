@@ -152,7 +152,7 @@ function formatEditResult(
 
 const editToolDescription = `Performs exact string replacements in files.
 
-- You must use the read tool at least once in the conversation before editing a file. This tool will error if you attempt an edit without reading the file.
+- You must use the Read tool at least once in the conversation before editing a file. This tool will error if you attempt an edit without reading the file.
 - When editing text from read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in oldText or newText.
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
 - Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
@@ -166,13 +166,13 @@ export function createEditToolDefinition(
 ): ToolDefinition<typeof editSchema, EditToolDetails | undefined, EditRenderState> {
 	const ops = options?.operations ?? defaultEditOperations;
 	return {
-		name: "edit",
-		label: "edit",
+		name: "Edit",
+		label: "Edit",
 		description: editToolDescription,
 		promptSnippet:
 			"Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
 		promptGuidelines: [
-			"Use edit for precise changes (edits[].oldText must match exactly)",
+			"Use Edit for precise changes (edits[].oldText must match exactly)",
 			"When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
 			"Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
 			"Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.",

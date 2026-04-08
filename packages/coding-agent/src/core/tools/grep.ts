@@ -134,8 +134,8 @@ export function createGrepToolDefinition(
 ): ToolDefinition<typeof grepSchema, GrepToolDetails | undefined> {
 	const customOps = options?.operations;
 	return {
-		name: "grep",
-		label: "grep",
+		name: "Grep",
+		label: "Grep",
 		description: grepToolDescription,
 		promptSnippet: "Search file contents for patterns (respects .gitignore)",
 		parameters: grepSchema,
@@ -344,7 +344,7 @@ export function createGrepToolDefinition(
 							}
 							if (linesTruncated) {
 								notices.push(
-									`Some lines truncated to ${GREP_MAX_LINE_LENGTH} chars. Use read tool to see full lines`,
+									`Some lines truncated to ${GREP_MAX_LINE_LENGTH} chars. Use Read tool to see full lines`,
 								);
 								details.linesTruncated = true;
 							}

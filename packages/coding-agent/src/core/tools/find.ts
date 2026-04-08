@@ -123,8 +123,8 @@ export function createFindToolDefinition(
 ): ToolDefinition<typeof findSchema, FindToolDetails | undefined> {
 	const customOps = options?.operations;
 	return {
-		name: "find",
-		label: "find",
+		name: "Glob",
+		label: "Glob",
 		description: findToolDescription,
 		promptSnippet: "Find files by glob pattern (respects .gitignore)",
 		parameters: findSchema,

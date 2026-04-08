@@ -271,12 +271,12 @@ If truncated, full output is saved to a temp file.
 IMPORTANT: Avoid using this tool to run (bash find), (bash grep), cat, head, tail, sed, awk, or echo commands, unless explicitly instructed or after you have verified that a dedicated tool cannot accomplish your task.
 Instead, use the appropriate dedicated tool as this will provide a much better experience for the user:
 
-- File search: Use find tool (NOT ls)
-- Content search: Use grep tool (NOT rg)
-- Read files: Use read tool (NOT cat/head/tail)
-- Edit files: Use edit tool (NOT sed/awk)
-- Write files: Use write tool (NOT echo >/cat <<EOF)
-- Communication: Output text directly (NOT echo/printf). While the bash tool can do similar things, it's better to use the built-in tools as they provide a better user experience and make it easier to review tool calls and give permission.
+- File search: Use Glob tool (NOT ls)
+- Content search: Use Grep tool (NOT rg)
+- Read files: Use Read tool (NOT cat/head/tail)
+- Edit files: Use Edit tool (NOT sed/awk)
+- Write files: Use Write tool (NOT echo >/cat <<EOF)
+- Communication: Output text directly (NOT echo/printf). While the Bash tool can do similar things, it's better to use the built-in tools as they provide a better user experience and make it easier to review tool calls and give permission.
 
 **Instructions**
 - If your command will create new directories or files, first use this tool to run ls to verify the parent directory exists and is the correct location.
@@ -306,8 +306,8 @@ export function createBashToolDefinition(
 	const commandPrefix = options?.commandPrefix;
 	const spawnHook = options?.spawnHook;
 	return {
-		name: "bash",
-		label: "bash",
+		name: "Bash",
+		label: "Bash",
 		description: bashToolDescription,
 		promptSnippet: "Execute bash commands (ls etc.)",
 		parameters: bashSchema,

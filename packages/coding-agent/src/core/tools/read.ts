@@ -130,7 +130,7 @@ const readToolDescription = `Reads a file from the local filesystem. You can acc
 - When you already know which part of the file you need, only read that part. This can be important for larger files.
 - Results are returned using cat -n format, with line numbers starting at 1
 - This tool allows reading images (e.g., PNG, JPG, GIF, WEBP). When reading an image file the contents are presented visually as the model is multimodal.
-- This tool can only read files, not directories. To list a directory, use the ls tool or bash.
+- This tool can only read files, not directories. To list a directory, use the List tool or Bash.
 - You can call multiple tools in a single response. It is always better to speculatively read multiple potentially useful files in parallel.
 - You will regularly be asked to read screenshots. If the user provides a path to a screenshot, ALWAYS use this tool to view the file at the path. This tool will work with all temporary file paths.`;
 
@@ -141,11 +141,11 @@ export function createReadToolDefinition(
 	const autoResizeImages = options?.autoResizeImages ?? true;
 	const ops = options?.operations ?? defaultReadOperations;
 	return {
-		name: "read",
-		label: "read",
+		name: "Read",
+		label: "Read",
 		description: readToolDescription,
 		promptSnippet: "Read file contents",
-		promptGuidelines: ["Use read to examine files instead of cat or sed."],
+		promptGuidelines: ["Use Read to examine files instead of cat or sed."],
 		parameters: readSchema,
 		async execute(
 			_toolCallId,
