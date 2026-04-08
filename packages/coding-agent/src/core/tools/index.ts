@@ -111,36 +111,36 @@ export const codingTools: Tool[] = [readTool, bashTool, editTool, writeTool];
 export const readOnlyTools: Tool[] = [readTool, grepTool, findTool, lsTool];
 
 export const allTools = {
-	read: readTool,
-	bash: bashTool,
-	edit: editTool,
-	write: writeTool,
-	grep: grepTool,
-	find: findTool,
-	ls: lsTool,
+	Read: readTool,
+	Bash: bashTool,
+	Edit: editTool,
+	Write: writeTool,
+	Grep: grepTool,
+	Glob: findTool,
+	List: lsTool,
 };
 
 export const allToolDefinitions = {
-	read: readToolDefinition,
-	bash: bashToolDefinition,
-	edit: editToolDefinition,
-	write: writeToolDefinition,
-	grep: grepToolDefinition,
-	find: findToolDefinition,
-	ls: lsToolDefinition,
+	Read: readToolDefinition,
+	Bash: bashToolDefinition,
+	Edit: editToolDefinition,
+	Write: writeToolDefinition,
+	Grep: grepToolDefinition,
+	Glob: findToolDefinition,
+	List: lsToolDefinition,
 };
 
 export type ToolName = keyof typeof allTools;
 
 export interface ToolsOptions {
-	read?: ReadToolOptions;
-	bash?: BashToolOptions;
+	Read?: ReadToolOptions;
+	Bash?: BashToolOptions;
 }
 
 export function createCodingToolDefinitions(cwd: string, options?: ToolsOptions): ToolDef[] {
 	return [
-		createReadToolDefinition(cwd, options?.read),
-		createBashToolDefinition(cwd, options?.bash),
+		createReadToolDefinition(cwd, options?.Read),
+		createBashToolDefinition(cwd, options?.Bash),
 		createEditToolDefinition(cwd),
 		createWriteToolDefinition(cwd),
 	];
@@ -148,7 +148,7 @@ export function createCodingToolDefinitions(cwd: string, options?: ToolsOptions)
 
 export function createReadOnlyToolDefinitions(cwd: string, options?: ToolsOptions): ToolDef[] {
 	return [
-		createReadToolDefinition(cwd, options?.read),
+		createReadToolDefinition(cwd, options?.Read),
 		createGrepToolDefinition(cwd),
 		createFindToolDefinition(cwd),
 		createLsToolDefinition(cwd),
@@ -157,37 +157,37 @@ export function createReadOnlyToolDefinitions(cwd: string, options?: ToolsOption
 
 export function createAllToolDefinitions(cwd: string, options?: ToolsOptions): Record<ToolName, ToolDef> {
 	return {
-		read: createReadToolDefinition(cwd, options?.read),
-		bash: createBashToolDefinition(cwd, options?.bash),
-		edit: createEditToolDefinition(cwd),
-		write: createWriteToolDefinition(cwd),
-		grep: createGrepToolDefinition(cwd),
-		find: createFindToolDefinition(cwd),
-		ls: createLsToolDefinition(cwd),
+		Read: createReadToolDefinition(cwd, options?.Read),
+		Bash: createBashToolDefinition(cwd, options?.Bash),
+		Edit: createEditToolDefinition(cwd),
+		Write: createWriteToolDefinition(cwd),
+		Grep: createGrepToolDefinition(cwd),
+		Glob: createFindToolDefinition(cwd),
+		List: createLsToolDefinition(cwd),
 	};
 }
 
 export function createCodingTools(cwd: string, options?: ToolsOptions): Tool[] {
 	return [
-		createReadTool(cwd, options?.read),
-		createBashTool(cwd, options?.bash),
+		createReadTool(cwd, options?.Read),
+		createBashTool(cwd, options?.Bash),
 		createEditTool(cwd),
 		createWriteTool(cwd),
 	];
 }
 
 export function createReadOnlyTools(cwd: string, options?: ToolsOptions): Tool[] {
-	return [createReadTool(cwd, options?.read), createGrepTool(cwd), createFindTool(cwd), createLsTool(cwd)];
+	return [createReadTool(cwd, options?.Read), createGrepTool(cwd), createFindTool(cwd), createLsTool(cwd)];
 }
 
 export function createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool> {
 	return {
-		read: createReadTool(cwd, options?.read),
-		bash: createBashTool(cwd, options?.bash),
-		edit: createEditTool(cwd),
-		write: createWriteTool(cwd),
-		grep: createGrepTool(cwd),
-		find: createFindTool(cwd),
-		ls: createLsTool(cwd),
+		Read: createReadTool(cwd, options?.Read),
+		Bash: createBashTool(cwd, options?.Bash),
+		Edit: createEditTool(cwd),
+		Write: createWriteTool(cwd),
+		Grep: createGrepTool(cwd),
+		Glob: createFindTool(cwd),
+		List: createLsTool(cwd),
 	};
 }

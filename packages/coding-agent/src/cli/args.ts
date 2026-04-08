@@ -197,7 +197,7 @@ export function printHelp(extensionFlags?: ExtensionFlag[]): void {
 					})
 					.join("\n")}\n`
 			: "";
-	console.log(`${chalk.bold(APP_NAME)} - AI coding assistant with read, bash, edit, write tools
+	console.log(`${chalk.bold(APP_NAME)} - AI coding assistant with Read, Bash, Edit, Write tools
 
 ${chalk.bold("Usage:")}
   ${APP_NAME} [options] [@files...] [messages...]
@@ -228,8 +228,8 @@ ${chalk.bold("Options:")}
   --models <patterns>            Comma-separated model patterns for Ctrl+P cycling
                                  Supports globs (anthropic/*, *sonnet*) and fuzzy matching
   --no-tools                     Disable all built-in tools
-  --tools <tools>                Comma-separated list of tools to enable (default: read,bash,edit,write)
-                                 Available: read, bash, edit, write, grep, find, ls
+  --tools <tools>                Comma-separated list of tools to enable (default: Read,Bash,Edit,Write)
+                                 Available: Read, Bash, Edit, Write, Grep, Glob, List
   --thinking <level>             Set thinking level: off, minimal, low, medium, high, xhigh
   --extension, -e <path>         Load an extension file (can be used multiple times)
   --no-extensions, -ne           Disable extension discovery (explicit -e paths still work)
@@ -289,7 +289,7 @@ ${chalk.bold("Examples:")}
   ${APP_NAME} --thinking high "Solve this complex problem"
 
   # Read-only mode (no file modifications possible)
-  ${APP_NAME} --tools read,grep,find,ls -p "Review the code in src/"
+  ${APP_NAME} --tools Read,Grep,Glob,List -p "Review the code in src/"
 
   # Export a session file to HTML
   ${APP_NAME} --export ~/${CONFIG_DIR_NAME}/agent/sessions/--path--/session.jsonl
@@ -326,13 +326,13 @@ ${chalk.bold("Environment Variables:")}
   PI_SHARE_VIEWER_URL              - Base URL for /share command (default: https://pi.dev/session/)
   PI_AI_ANTIGRAVITY_VERSION        - Override Antigravity User-Agent version (e.g., 1.23.0)
 
-${chalk.bold("Available Tools (default: read, bash, edit, write):")}
-  read   - Read file contents
-  bash   - Execute bash commands
-  edit   - Edit files with find/replace
-  write  - Write files (creates/overwrites)
-  grep   - Search file contents (read-only, off by default)
-  find   - Find files by glob pattern (read-only, off by default)
-  ls     - List directory contents (read-only, off by default)
+${chalk.bold("Available Tools (default: Read, Bash, Edit, Write):")}
+  Read   - Read file contents
+  Bash   - Execute bash commands
+  Edit   - Edit files with find/replace
+  Write  - Write files (creates/overwrites)
+  Grep   - Search file contents (read-only, off by default)
+  Glob   - Find files by glob pattern (read-only, off by default)
+  List   - List directory contents (read-only, off by default)
 `);
 }
