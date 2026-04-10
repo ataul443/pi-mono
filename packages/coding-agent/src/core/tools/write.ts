@@ -210,9 +210,7 @@ export function createWriteToolDefinition(
 		) {
 			const absolutePath = resolveToCwd(path, cwd);
 			if (permissions) {
-				const perm = await enforcePermission(absolutePath, "write", "Write", permissions);
-				if (!perm.allowed)
-					return { content: [{ type: "text", text: perm.error! }], isError: true, details: undefined };
+				await enforcePermission(absolutePath, "write", "Write", permissions);
 			}
 			const dir = dirname(absolutePath);
 			return withFileMutationQueue(

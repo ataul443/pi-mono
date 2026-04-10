@@ -332,9 +332,7 @@ export function createBashToolDefinition(
 				}
 				const extractedPaths = extractPathsFromCommand(command, cwd);
 				for (const ep of extractedPaths) {
-					const perm = await enforcePermission(ep.path, ep.operation, "Bash", permissions);
-					if (!perm.allowed)
-						return { content: [{ type: "text", text: perm.error! }], isError: true, details: undefined };
+					await enforcePermission(ep.path, ep.operation, "Bash", permissions);
 				}
 			}
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;

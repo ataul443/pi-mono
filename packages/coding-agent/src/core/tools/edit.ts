@@ -186,9 +186,7 @@ export function createEditToolDefinition(
 			const { path, edits } = validateEditInput(input);
 			const absolutePath = resolveToCwd(path, cwd);
 			if (permissions) {
-				const perm = await enforcePermission(absolutePath, "write", "Edit", permissions);
-				if (!perm.allowed)
-					return { content: [{ type: "text" as const, text: perm.error! }], isError: true, details: undefined };
+				await enforcePermission(absolutePath, "write", "Edit", permissions);
 			}
 
 			return withFileMutationQueue(

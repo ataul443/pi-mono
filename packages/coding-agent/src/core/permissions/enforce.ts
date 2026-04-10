@@ -13,19 +13,19 @@ export async function enforcePermission(
 	operation: "read" | "write" | "execute",
 	toolName: string,
 	permissions: PermissionContext | undefined,
-): Promise<{ allowed: boolean; error?: string }> {
+): Promise<void> {
 	if (permissions === undefined) {
-		return { allowed: true };
+		return;
 	}
 
 	const result = checkPermission(absolutePath, operation, permissions.workingDirs);
 
 	if (result.decision === "deny") {
-		return { allowed: false, error: `Permission denied: ${result.reason}` };
+		throw new Error(`Permission denied: ${result.reason}`);
 	}
 
 	if (result.decision === "allow") {
-		return { allowed: true };
+		return;
 	}
 
 	// decision === "ask": prompt the user
@@ -37,14 +37,10 @@ export async function enforcePermission(
 	});
 
 	if (response.decision === "deny") {
-		return { allowed: false, error: `Permission denied for ${operation} on ${absolutePath}` };
+		throw new Error(`Permission denied for ${operation} on ${absolutePath}`);
 	}
 
 	if (response.decision === "allow_session") {
 		permissions.workingDirs.additional.set(response.directory, { source: "user_approved" });
-		return { allowed: true };
 	}
-
-	// decision === "allow"
-	return { allowed: true };
 }
