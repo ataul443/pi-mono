@@ -501,7 +501,7 @@ export async function main(args: string[]) {
 	let worktreeInfo: Awaited<ReturnType<typeof createWorktree>> | undefined;
 	if (parsed.worktree) {
 		try {
-			const slug = crypto.randomUUID().slice(0, 8);
+			const slug = parsed.worktree;
 			worktreeInfo = await createWorktree(slug, cwd, {
 				baseBranch: parsed.baseBranch,
 			});

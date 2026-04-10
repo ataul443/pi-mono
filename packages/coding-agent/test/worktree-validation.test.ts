@@ -84,11 +84,11 @@ describe("flattenSlug", () => {
 });
 
 describe("worktreeBranchName", () => {
-	it("should prefix with worktree-", () => {
-		expect(worktreeBranchName("my-feature")).toBe("worktree-my-feature");
+	it("should prefix with zota/", () => {
+		expect(worktreeBranchName("my-feature")).toBe("zota/my-feature");
 	});
 
 	it("should flatten nested slugs in branch name", () => {
-		expect(worktreeBranchName("user/feature")).toBe("worktree-user+feature");
+		expect(worktreeBranchName("user/feature")).toBe("zota/user+feature");
 	});
 });

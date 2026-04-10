@@ -39,7 +39,7 @@ export function validateWorktreeSlug(slug: string): void {
 
 // Flatten nested slugs (`user/feature` → `user+feature`) for both the branch
 // name and the directory path. Nesting in either location is unsafe:
-//   - git refs: `worktree-user` (file) vs `worktree-user/feature` (needs dir)
+//   - git refs: `zota/user` (file) vs `zota/user/feature` (needs dir)
 //     is a D/F conflict that git rejects.
 //   - directory: `.zota/worktrees/user/feature/` lives inside the `user`
 //     worktree; `git worktree remove` on the parent deletes children with
@@ -51,5 +51,5 @@ export function flattenSlug(slug: string): string {
 }
 
 export function worktreeBranchName(slug: string): string {
-	return `zota-${flattenSlug(slug)}`;
+	return `zota/${flattenSlug(slug)}`;
 }
