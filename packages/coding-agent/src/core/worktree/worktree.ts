@@ -15,6 +15,8 @@ export interface WorktreeInfo {
 export interface WorktreeOptions {
 	/** Base directory for worktrees. Default: <git-root>/.zota/worktrees/ */
 	worktreeDir?: string;
+	/** Branch to base the worktree on. Default: auto-detected default branch (main/master). */
+	baseBranch?: string;
 }
 
 async function getGitRoot(cwd: string): Promise<string> {
@@ -91,10 +93,10 @@ export async function createWorktree(
 		return { worktreePath, branch, originCwd };
 	}
 
-	const defaultBranch = await getDefaultBranch(gitRoot);
+	const base = options?.baseBranch ?? (await getDefaultBranch(gitRoot));
 
 	try {
-		await execFileAsync("git", ["worktree", "add", "-B", branch, worktreePath, defaultBranch], { cwd: originCwd });
+		await execFileAsync("git", ["worktree", "add", "-B", branch, worktreePath, base], { cwd: originCwd });
 	} catch (error) {
 		throw new Error(`Failed to create worktree at "${worktreePath}": ${(error as Error).message}`);
 	}
