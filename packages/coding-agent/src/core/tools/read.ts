@@ -61,9 +61,7 @@ export interface ReadToolOptions {
  */
 function addLineNumbers(text: string, startLine: number): string {
 	const lines = text.split("\n");
-	const lastLineNum = startLine + lines.length - 1;
-	const width = String(lastLineNum).length;
-	return lines.map((line, i) => `${String(startLine + i).padStart(width)}\t${line}`).join("\n");
+	return lines.map((line, i) => `${startLine + i}\t${line}`).join("\n");
 }
 
 function formatReadCall(
@@ -159,9 +157,7 @@ export function createReadToolDefinition(
 		) {
 			const absolutePath = resolveReadPath(path, cwd);
 			if (permissions) {
-				const perm = await enforcePermission(absolutePath, "read", "Read", permissions);
-				if (!perm.allowed)
-					return { content: [{ type: "text", text: perm.error! }], isError: true, details: undefined };
+				await enforcePermission(absolutePath, "read", "Read", permissions);
 			}
 			return new Promise<{ content: (TextContent | ImageContent)[]; details: ReadToolDetails | undefined }>(
 				(resolve, reject) => {
