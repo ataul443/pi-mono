@@ -5,6 +5,8 @@ import { existsSync, readdirSync, statSync } from "fs";
 import nodePath from "path";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { getTextOutput, invalidArgText, shortenPath, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -99,6 +101,7 @@ function formatLsResult(
 export function createLsToolDefinition(
 	cwd: string,
 	options?: LsToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof lsSchema, LsToolDetails | undefined> {
 	const ops = options?.operations ?? defaultLsOperations;
 	return {
@@ -126,6 +129,13 @@ export function createLsToolDefinition(
 				(async () => {
 					try {
 						const dirPath = resolveToCwd(path || ".", cwd);
+						if (permissions) {
+							const perm = await enforcePermission(dirPath, "read", "List", permissions);
+							if (!perm.allowed) {
+								reject(new Error(perm.error!));
+								return;
+							}
+						}
 						const effectiveLimit = limit ?? DEFAULT_LIMIT;
 
 						// Check if path exists.
@@ -224,8 +234,12 @@ export function createLsToolDefinition(
 	};
 }
 
-export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<typeof lsSchema> {
-	return wrapToolDefinition(createLsToolDefinition(cwd, options));
+export function createLsTool(
+	cwd: string,
+	options?: LsToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof lsSchema> {
+	return wrapToolDefinition(createLsToolDefinition(cwd, options, permissions));
 }
 
 /** Default ls tool using process.cwd() for backwards compatibility. */

@@ -28,6 +28,7 @@ import { KeybindingsManager } from "./core/keybindings.js";
 import type { ModelRegistry } from "./core/model-registry.js";
 import { resolveCliModel, resolveModelScope, type ScopedModel } from "./core/model-resolver.js";
 import { restoreStdout, takeOverStdout } from "./core/output-guard.js";
+import type { WorkingDirectorySet } from "./core/permissions/types.js";
 import type { CreateAgentSessionOptions } from "./core/sdk.js";
 import {
 	formatMissingSessionCwdPrompt,
@@ -512,6 +513,8 @@ export async function main(args: string[]) {
 	const resolvedSkillPaths = resolveCliPaths(cwd, parsed.skills);
 	const resolvedPromptTemplatePaths = resolveCliPaths(cwd, parsed.promptTemplates);
 	const resolvedThemePaths = resolveCliPaths(cwd, parsed.themes);
+	const _resolvedAllowDirs = resolveCliPaths(cwd, parsed.allowDirs);
+	const _resolvedWorktree = parsed.worktree ? resolve(cwd, parsed.worktree) : undefined;
 	const authStorage = AuthStorage.create();
 	const createRuntime: CreateAgentSessionRuntimeFactory = async ({
 		cwd,
@@ -574,6 +577,18 @@ export async function main(args: string[]) {
 			}
 		}
 
+		let workingDirs: WorkingDirectorySet | undefined;
+		if (parsed.permissions) {
+			const additionalDirs = new Map<string, { source: "cli" | "config" | "user_approved" }>();
+			for (const dir of _resolvedAllowDirs ?? []) {
+				additionalDirs.set(dir, { source: "cli" });
+			}
+			if (_resolvedWorktree) {
+				additionalDirs.set(_resolvedWorktree, { source: "cli" });
+			}
+			workingDirs = { cwd, additional: additionalDirs };
+		}
+
 		const created = await createAgentSessionFromServices({
 			services,
 			sessionManager,
@@ -583,6 +598,7 @@ export async function main(args: string[]) {
 			scopedModels: sessionOptions.scopedModels,
 			tools: sessionOptions.tools,
 			customTools: sessionOptions.customTools,
+			workingDirs,
 		});
 		const cliThinkingOverride = parsed.thinking !== undefined || cliThinkingFromModel;
 		if (created.session.model && cliThinkingOverride) {

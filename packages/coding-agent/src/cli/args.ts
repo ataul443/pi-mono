@@ -44,6 +44,9 @@ export interface Args {
 	verbose?: boolean;
 	messages: string[];
 	fileArgs: string[];
+	permissions?: boolean;
+	allowDirs?: string[];
+	worktree?: string;
 	/** Unknown flags (potentially extension flags) - map of flag name to value */
 	unknownFlags: Map<string, boolean | string>;
 	diagnostics: Array<{ type: "warning" | "error"; message: string }>;
@@ -156,6 +159,13 @@ export function parseArgs(args: string[]): Args {
 			} else {
 				result.listModels = true;
 			}
+		} else if (arg === "--permissions") {
+			result.permissions = true;
+		} else if (arg === "--allow-dir" && i + 1 < args.length) {
+			result.allowDirs = result.allowDirs ?? [];
+			result.allowDirs.push(args[++i]);
+		} else if (arg === "--worktree" && i + 1 < args.length) {
+			result.worktree = args[++i];
 		} else if (arg === "--verbose") {
 			result.verbose = true;
 		} else if (arg === "--offline") {
@@ -241,6 +251,9 @@ ${chalk.bold("Options:")}
   --no-themes                    Disable theme discovery and loading
   --export <file>                Export session file to HTML and exit
   --list-models [search]         List available models (with optional fuzzy search)
+  --permissions                  Enable directory permission checks for file operations
+  --allow-dir <path>             Pre-approve an additional directory (can be repeated)
+  --worktree <path>              Pre-approve a git worktree directory
   --verbose                      Force verbose startup (overrides quietStartup setting)
   --offline                      Disable startup network operations (same as PI_OFFLINE=1)
   --help, -h                     Show this help

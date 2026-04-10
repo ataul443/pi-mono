@@ -197,6 +197,7 @@ const noOpUIContext: ExtensionUIContext = {
 	setTheme: (_theme: string | Theme) => ({ success: false, error: "UI not available" }),
 	getToolsExpanded: () => false,
 	setToolsExpanded: () => {},
+	requestPermission: async () => ({ decision: "deny" as const }),
 };
 
 export class ExtensionRunner {

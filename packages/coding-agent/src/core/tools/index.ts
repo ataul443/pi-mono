@@ -84,6 +84,7 @@ export {
 
 import type { AgentTool } from "@mariozechner/pi-agent-core";
 import type { ToolDefinition } from "../extensions/types.js";
+import type { PermissionContext } from "../permissions/types.js";
 import {
 	type BashToolOptions,
 	bashTool,
@@ -135,59 +136,65 @@ export type ToolName = keyof typeof allTools;
 export interface ToolsOptions {
 	Read?: ReadToolOptions;
 	Bash?: BashToolOptions;
+	permissions?: PermissionContext;
 }
 
 export function createCodingToolDefinitions(cwd: string, options?: ToolsOptions): ToolDef[] {
 	return [
-		createReadToolDefinition(cwd, options?.Read),
-		createBashToolDefinition(cwd, options?.Bash),
-		createEditToolDefinition(cwd),
-		createWriteToolDefinition(cwd),
+		createReadToolDefinition(cwd, options?.Read, options?.permissions),
+		createBashToolDefinition(cwd, options?.Bash, options?.permissions),
+		createEditToolDefinition(cwd, undefined, options?.permissions),
+		createWriteToolDefinition(cwd, undefined, options?.permissions),
 	];
 }
 
 export function createReadOnlyToolDefinitions(cwd: string, options?: ToolsOptions): ToolDef[] {
 	return [
-		createReadToolDefinition(cwd, options?.Read),
-		createGrepToolDefinition(cwd),
-		createFindToolDefinition(cwd),
-		createLsToolDefinition(cwd),
+		createReadToolDefinition(cwd, options?.Read, options?.permissions),
+		createGrepToolDefinition(cwd, undefined, options?.permissions),
+		createFindToolDefinition(cwd, undefined, options?.permissions),
+		createLsToolDefinition(cwd, undefined, options?.permissions),
 	];
 }
 
 export function createAllToolDefinitions(cwd: string, options?: ToolsOptions): Record<ToolName, ToolDef> {
 	return {
-		Read: createReadToolDefinition(cwd, options?.Read),
-		Bash: createBashToolDefinition(cwd, options?.Bash),
-		Edit: createEditToolDefinition(cwd),
-		Write: createWriteToolDefinition(cwd),
-		Grep: createGrepToolDefinition(cwd),
-		Glob: createFindToolDefinition(cwd),
-		List: createLsToolDefinition(cwd),
+		Read: createReadToolDefinition(cwd, options?.Read, options?.permissions),
+		Bash: createBashToolDefinition(cwd, options?.Bash, options?.permissions),
+		Edit: createEditToolDefinition(cwd, undefined, options?.permissions),
+		Write: createWriteToolDefinition(cwd, undefined, options?.permissions),
+		Grep: createGrepToolDefinition(cwd, undefined, options?.permissions),
+		Glob: createFindToolDefinition(cwd, undefined, options?.permissions),
+		List: createLsToolDefinition(cwd, undefined, options?.permissions),
 	};
 }
 
 export function createCodingTools(cwd: string, options?: ToolsOptions): Tool[] {
 	return [
-		createReadTool(cwd, options?.Read),
-		createBashTool(cwd, options?.Bash),
-		createEditTool(cwd),
-		createWriteTool(cwd),
+		createReadTool(cwd, options?.Read, options?.permissions),
+		createBashTool(cwd, options?.Bash, options?.permissions),
+		createEditTool(cwd, undefined, options?.permissions),
+		createWriteTool(cwd, undefined, options?.permissions),
 	];
 }
 
 export function createReadOnlyTools(cwd: string, options?: ToolsOptions): Tool[] {
-	return [createReadTool(cwd, options?.Read), createGrepTool(cwd), createFindTool(cwd), createLsTool(cwd)];
+	return [
+		createReadTool(cwd, options?.Read, options?.permissions),
+		createGrepTool(cwd, undefined, options?.permissions),
+		createFindTool(cwd, undefined, options?.permissions),
+		createLsTool(cwd, undefined, options?.permissions),
+	];
 }
 
 export function createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool> {
 	return {
-		Read: createReadTool(cwd, options?.Read),
-		Bash: createBashTool(cwd, options?.Bash),
-		Edit: createEditTool(cwd),
-		Write: createWriteTool(cwd),
-		Grep: createGrepTool(cwd),
-		Glob: createFindTool(cwd),
-		List: createLsTool(cwd),
+		Read: createReadTool(cwd, options?.Read, options?.permissions),
+		Bash: createBashTool(cwd, options?.Bash, options?.permissions),
+		Edit: createEditTool(cwd, undefined, options?.permissions),
+		Write: createWriteTool(cwd, undefined, options?.permissions),
+		Grep: createGrepTool(cwd, undefined, options?.permissions),
+		Glob: createFindTool(cwd, undefined, options?.permissions),
+		List: createLsTool(cwd, undefined, options?.permissions),
 	};
 }

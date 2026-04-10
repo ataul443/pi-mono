@@ -280,6 +280,28 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 		setToolsExpanded(_expanded: boolean) {
 			// Tool expansion not supported in RPC mode - no TUI
 		},
+
+		requestPermission: (request) =>
+			createDialogPromise(
+				undefined,
+				{ decision: "deny" as const },
+				{
+					method: "request_permission",
+					path: request.path,
+					operation: request.operation,
+					tool: request.tool,
+					reason: request.reason,
+				},
+				(response: RpcExtensionUIResponse) => {
+					if ("permission" in response) {
+						if (response.permission === "allow_session" && response.directory) {
+							return { decision: "allow_session" as const, directory: response.directory };
+						}
+						return { decision: response.permission === "allow" ? ("allow" as const) : ("deny" as const) };
+					}
+					return { decision: "deny" as const };
+				},
+			),
 	});
 
 	const rebindSession = async (): Promise<void> => {

@@ -1650,6 +1650,11 @@ export class InteractiveMode {
 			},
 			getToolsExpanded: () => this.toolOutputExpanded,
 			setToolsExpanded: (expanded) => this.setToolsExpanded(expanded),
+			requestPermission: async (request) => {
+				const message = `${request.tool} wants to ${request.operation} ${request.path}\nReason: ${request.reason}`;
+				const approved = await this.showExtensionConfirm("Permission Required", message);
+				return approved ? { decision: "allow" as const } : { decision: "deny" as const };
+			},
 		};
 	}
 

@@ -47,6 +47,7 @@ import type { ReadonlyFooterDataProvider } from "../footer-data-provider.js";
 import type { KeybindingsManager } from "../keybindings.js";
 import type { CustomMessage } from "../messages.js";
 import type { ModelRegistry } from "../model-registry.js";
+import type { PermissionRequest, PermissionResponse } from "../permissions/types.js";
 import type {
 	BranchSummaryEntry,
 	CompactionEntry,
@@ -74,8 +75,8 @@ import type {
 } from "../tools/index.js";
 
 export type { ExecOptions, ExecResult } from "../exec.js";
-export type { AgentToolResult, AgentToolUpdateCallback };
 export type { AppKeybinding, KeybindingsManager } from "../keybindings.js";
+export type { AgentToolResult, AgentToolUpdateCallback };
 
 // ============================================================================
 // UI Context
@@ -239,6 +240,9 @@ export interface ExtensionUIContext {
 
 	/** Set tool output expansion state. */
 	setToolsExpanded(expanded: boolean): void;
+
+	/** Request permission for a file/directory operation. Returns the user's decision. */
+	requestPermission(request: PermissionRequest): Promise<PermissionResponse>;
 }
 
 // ============================================================================

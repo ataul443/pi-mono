@@ -5,6 +5,7 @@ import { getAgentDir } from "../config.js";
 import { AuthStorage } from "./auth-storage.js";
 import type { SessionStartEvent, ToolDefinition } from "./extensions/index.js";
 import { ModelRegistry } from "./model-registry.js";
+import type { WorkingDirectorySet } from "./permissions/types.js";
 import { DefaultResourceLoader, type DefaultResourceLoaderOptions, type ResourceLoader } from "./resource-loader.js";
 import { type CreateAgentSessionResult, createAgentSession } from "./sdk.js";
 import type { SessionManager } from "./session-manager.js";
@@ -55,6 +56,8 @@ export interface CreateAgentSessionFromServicesOptions {
 	scopedModels?: Array<{ model: Model<any>; thinkingLevel?: ThinkingLevel }>;
 	tools?: Tool[];
 	customTools?: ToolDefinition[];
+	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
+	workingDirs?: WorkingDirectorySet;
 }
 
 /**
@@ -193,5 +196,6 @@ export async function createAgentSessionFromServices(
 		tools: options.tools,
 		customTools: options.customTools,
 		sessionStartEvent: options.sessionStartEvent,
+		workingDirs: options.workingDirs,
 	});
 }

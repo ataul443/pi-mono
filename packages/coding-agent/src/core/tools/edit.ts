@@ -5,6 +5,8 @@ import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile, writeFile as fsWriteFile } from "fs/promises";
 import { renderDiff } from "../../modes/interactive/components/diff.js";
 import type { ToolDefinition } from "../extensions/types.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import {
 	applyEditsToNormalizedContent,
 	detectLineEnding,
@@ -163,6 +165,7 @@ const editToolDescription = `Performs exact string replacements in files.
 export function createEditToolDefinition(
 	cwd: string,
 	options?: EditToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof editSchema, EditToolDetails | undefined, EditRenderState> {
 	const ops = options?.operations ?? defaultEditOperations;
 	return {
@@ -182,6 +185,11 @@ export function createEditToolDefinition(
 		async execute(_toolCallId, input: EditToolInput, signal?: AbortSignal, _onUpdate?, _ctx?) {
 			const { path, edits } = validateEditInput(input);
 			const absolutePath = resolveToCwd(path, cwd);
+			if (permissions) {
+				const perm = await enforcePermission(absolutePath, "write", "Edit", permissions);
+				if (!perm.allowed)
+					return { content: [{ type: "text" as const, text: perm.error! }], isError: true, details: undefined };
+			}
 
 			return withFileMutationQueue(
 				absolutePath,
@@ -307,8 +315,12 @@ export function createEditToolDefinition(
 	};
 }
 
-export function createEditTool(cwd: string, options?: EditToolOptions): AgentTool<typeof editSchema> {
-	return wrapToolDefinition(createEditToolDefinition(cwd, options));
+export function createEditTool(
+	cwd: string,
+	options?: EditToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof editSchema> {
+	return wrapToolDefinition(createEditToolDefinition(cwd, options, permissions));
 }
 
 /** Default edit tool using process.cwd() for backwards compatibility. */

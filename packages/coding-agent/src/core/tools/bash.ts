@@ -12,6 +12,9 @@ import { theme } from "../../modes/interactive/theme/theme.js";
 import { waitForChildProcess } from "../../utils/child-process.js";
 import { getShellConfig, getShellEnv, killProcessTree } from "../../utils/shell.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
+import { extractPathsFromCommand, isDangerousRemoval } from "../permissions/bash-paths.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import { getTextOutput, invalidArgText, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.js";
@@ -301,6 +304,7 @@ Instead, use the appropriate dedicated tool as this will provide a much better e
 export function createBashToolDefinition(
 	cwd: string,
 	options?: BashToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof bashSchema, BashToolDetails | undefined, BashRenderState> {
 	const ops = options?.operations ?? createLocalBashOperations();
 	const commandPrefix = options?.commandPrefix;
@@ -318,6 +322,21 @@ export function createBashToolDefinition(
 			onUpdate?,
 			_ctx?,
 		) {
+			if (permissions) {
+				if (isDangerousRemoval(command)) {
+					return {
+						content: [{ type: "text", text: "Permission denied: dangerous removal command" }],
+						isError: true,
+						details: undefined,
+					};
+				}
+				const extractedPaths = extractPathsFromCommand(command, cwd);
+				for (const ep of extractedPaths) {
+					const perm = await enforcePermission(ep.path, ep.operation, "Bash", permissions);
+					if (!perm.allowed)
+						return { content: [{ type: "text", text: perm.error! }], isError: true, details: undefined };
+				}
+			}
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
 			const resolvedTimeout = timeout ?? DEFAULT_BASH_TIMEOUT_SECONDS;
 			const spawnContext = resolveSpawnContext(resolvedCommand, cwd, spawnHook);
@@ -472,8 +491,12 @@ export function createBashToolDefinition(
 	};
 }
 
-export function createBashTool(cwd: string, options?: BashToolOptions): AgentTool<typeof bashSchema> {
-	return wrapToolDefinition(createBashToolDefinition(cwd, options));
+export function createBashTool(
+	cwd: string,
+	options?: BashToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof bashSchema> {
+	return wrapToolDefinition(createBashToolDefinition(cwd, options, permissions));
 }
 
 /** Default bash tool using process.cwd() for backwards compatibility. */

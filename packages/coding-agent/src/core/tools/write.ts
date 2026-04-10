@@ -6,6 +6,8 @@ import { dirname } from "path";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.js";
 import { getLanguageFromPath, highlightCode } from "../../modes/interactive/theme/theme.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import { withFileMutationQueue } from "./file-mutation-queue.js";
 import { resolveToCwd } from "./path-utils.js";
 import { invalidArgText, normalizeDisplayText, replaceTabs, shortenPath, str } from "./render-utils.js";
@@ -189,6 +191,7 @@ const writeToolDescription = `Writes a file to the local filesystem. Automatical
 export function createWriteToolDefinition(
 	cwd: string,
 	options?: WriteToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof writeSchema, undefined> {
 	const ops = options?.operations ?? defaultWriteOperations;
 	return {
@@ -206,6 +209,11 @@ export function createWriteToolDefinition(
 			_ctx?,
 		) {
 			const absolutePath = resolveToCwd(path, cwd);
+			if (permissions) {
+				const perm = await enforcePermission(absolutePath, "write", "Write", permissions);
+				if (!perm.allowed)
+					return { content: [{ type: "text", text: perm.error! }], isError: true, details: undefined };
+			}
 			const dir = dirname(absolutePath);
 			return withFileMutationQueue(
 				absolutePath,
@@ -283,8 +291,12 @@ export function createWriteToolDefinition(
 	};
 }
 
-export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentTool<typeof writeSchema> {
-	return wrapToolDefinition(createWriteToolDefinition(cwd, options));
+export function createWriteTool(
+	cwd: string,
+	options?: WriteToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof writeSchema> {
+	return wrapToolDefinition(createWriteToolDefinition(cwd, options, permissions));
 }
 
 /** Default write tool using process.cwd() for backwards compatibility. */

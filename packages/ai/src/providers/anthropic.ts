@@ -265,6 +265,33 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 			if (nextParams !== undefined) {
 				params = nextParams as MessageCreateParamsStreaming;
 			}
+			// === TRACE: Raw Anthropic API call ===
+			try {
+				if (process.env.PI_TRACE_ANTHROPIC === "1") {
+					const traceData = {
+						timestamp: new Date().toISOString(),
+						model: params.model,
+						isOAuth,
+						apiKeyPrefix: `${(options?.apiKey ?? "").substring(0, 15)}...`,
+						clientDefaultHeaders:
+							(client as any)._client?.defaultHeaders ?? (client as any).defaultHeaders ?? "unknown",
+						systemPromptSnippet: Array.isArray(params.system)
+							? params.system.map((s: any) => s.text?.substring(0, 80)).join(" | ")
+							: typeof params.system === "string"
+								? params.system.substring(0, 80)
+								: "none",
+						toolNames: params.tools?.map((t: any) => t.name).slice(0, 10),
+						messageCount: params.messages?.length,
+					};
+					process.stderr.write(`${JSON.stringify(traceData)}\n`);
+					process.stderr.write(
+						`[TRACE] Anthropic API call: model=${params.model} isOAuth=${isOAuth} key=${traceData.apiKeyPrefix}\n`,
+					);
+				}
+			} catch (traceErr: any) {
+				process.stderr.write(`[TRACE ERROR] ${traceErr.message}\n`);
+			}
+			// === END TRACE ===
 			const anthropicStream = client.messages.stream({ ...params, stream: true }, { signal: options?.signal });
 			stream.push({ type: "start", partial: output });
 
@@ -654,6 +681,17 @@ function createClient(
 			),
 		});
 
+		// TRACE: OAuth client headers
+		try {
+			if (process.env.PI_TRACE_ANTHROPIC === "1") {
+				process.stderr.write(
+					`${JSON.stringify({ trace: "createClient", authType: "oauth", apiKeyPrefix: `${apiKey.substring(0, 15)}...`, baseURL: model.baseUrl, headers: { "anthropic-beta": `claude-code-20250219,oauth-2025-04-20,${betaFeatures.join(",")}`, "user-agent": `claude-cli/${claudeCodeVersion}`, "x-app": "cli" }, modelHeaders: model.headers, optionsHeaders })}\n`,
+				);
+				process.stderr.write(`[TRACE] createClient: oauth, key=${apiKey.substring(0, 15)}...\n`);
+			}
+		} catch (traceErr: any) {
+			process.stderr.write(`[TRACE ERROR] createClient: ${traceErr.message}\n`);
+		}
 		return { client, isOAuthToken: true };
 	}
 

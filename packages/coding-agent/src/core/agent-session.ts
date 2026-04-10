@@ -69,6 +69,7 @@ import {
 } from "./extensions/index.js";
 import type { BashExecutionMessage, CustomMessage } from "./messages.js";
 import type { ModelRegistry } from "./model-registry.js";
+import type { PermissionContext, WorkingDirectorySet } from "./permissions/types.js";
 import { expandPromptTemplate, type PromptTemplate } from "./prompt-templates.js";
 import type { ResourceExtensionPaths, ResourceLoader } from "./resource-loader.js";
 import type { BranchSummaryEntry, CompactionEntry, SessionManager } from "./session-manager.js";
@@ -161,6 +162,8 @@ export interface AgentSessionConfig {
 	extensionRunnerRef?: { current?: ExtensionRunner };
 	/** Session start event metadata emitted when extensions bind to this runtime. */
 	sessionStartEvent?: SessionStartEvent;
+	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
+	workingDirs?: WorkingDirectorySet;
 }
 
 export interface ExtensionBindings {
@@ -287,6 +290,10 @@ export class AgentSession {
 	// Model registry for API key resolution
 	private _modelRegistry: ModelRegistry;
 
+	// Permission enforcement
+	private _workingDirs?: WorkingDirectorySet;
+	private _uiContextRef: { current?: ExtensionUIContext } = {};
+
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	private _toolDefinitions: Map<string, ToolDefinitionEntry> = new Map();
@@ -309,6 +316,7 @@ export class AgentSession {
 		this._initialActiveToolNames = config.initialActiveToolNames;
 		this._baseToolsOverride = config.baseToolsOverride;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
+		this._workingDirs = config.workingDirs;
 
 		// Always subscribe to agent events for internal handling
 		// (session persistence, extensions, auto-compaction, retry logic)
@@ -2007,6 +2015,7 @@ export class AgentSession {
 	async bindExtensions(bindings: ExtensionBindings): Promise<void> {
 		if (bindings.uiContext !== undefined) {
 			this._extensionUIContext = bindings.uiContext;
+			this._uiContextRef.current = bindings.uiContext;
 		}
 		if (bindings.commandContextActions !== undefined) {
 			this._extensionCommandContextActions = bindings.commandContextActions;
@@ -2294,6 +2303,17 @@ export class AgentSession {
 	}): void {
 		const autoResizeImages = this.settingsManager.getImageAutoResize();
 		const shellCommandPrefix = this.settingsManager.getShellCommandPrefix();
+		const uiContextRef = this._uiContextRef;
+		const workingDirs = this._workingDirs;
+		const permissions: PermissionContext | undefined = workingDirs
+			? {
+					workingDirs,
+					requestPermission: (req) =>
+						uiContextRef.current
+							? uiContextRef.current.requestPermission(req)
+							: Promise.resolve({ decision: "deny" as const }),
+				}
+			: undefined;
 		const baseToolDefinitions = this._baseToolsOverride
 			? Object.fromEntries(
 					Object.entries(this._baseToolsOverride).map(([name, tool]) => [
@@ -2304,6 +2324,7 @@ export class AgentSession {
 			: createAllToolDefinitions(this._cwd, {
 					Read: { autoResizeImages },
 					Bash: { commandPrefix: shellCommandPrefix },
+					permissions,
 				});
 
 		this._baseToolDefinitions = new Map(

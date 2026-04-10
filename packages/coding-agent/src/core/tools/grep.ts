@@ -8,6 +8,8 @@ import path from "path";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.js";
 import { ensureTool } from "../../utils/tools-manager.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { getTextOutput, invalidArgText, shortenPath, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -131,6 +133,7 @@ const grepToolDescription = `Search file contents for a pattern. Returns matchin
 export function createGrepToolDefinition(
 	cwd: string,
 	options?: GrepToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof grepSchema, GrepToolDetails | undefined> {
 	const customOps = options?.operations;
 	return {
@@ -184,6 +187,13 @@ export function createGrepToolDefinition(
 						}
 
 						const searchPath = resolveToCwd(searchDir || ".", cwd);
+						if (permissions) {
+							const perm = await enforcePermission(searchPath, "read", "Grep", permissions);
+							if (!perm.allowed) {
+								settle(() => resolve({ content: [{ type: "text", text: perm.error! }], details: undefined }));
+								return;
+							}
+						}
 						const ops = customOps ?? defaultGrepOperations;
 						let isDirectory: boolean;
 						try {
@@ -375,8 +385,12 @@ export function createGrepToolDefinition(
 	};
 }
 
-export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentTool<typeof grepSchema> {
-	return wrapToolDefinition(createGrepToolDefinition(cwd, options));
+export function createGrepTool(
+	cwd: string,
+	options?: GrepToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof grepSchema> {
+	return wrapToolDefinition(createGrepToolDefinition(cwd, options, permissions));
 }
 
 /** Default grep tool using process.cwd() for backwards compatibility. */

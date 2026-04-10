@@ -8,6 +8,8 @@ import path from "path";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.js";
 import { ensureTool } from "../../utils/tools-manager.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import { resolveToCwd } from "./path-utils.js";
 import { getTextOutput, invalidArgText, shortenPath, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -120,6 +122,7 @@ const findToolDescription = `Fast file pattern matching tool that works with any
 export function createFindToolDefinition(
 	cwd: string,
 	options?: FindToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof findSchema, FindToolDetails | undefined> {
 	const customOps = options?.operations;
 	return {
@@ -147,6 +150,13 @@ export function createFindToolDefinition(
 				(async () => {
 					try {
 						const searchPath = resolveToCwd(searchDir || ".", cwd);
+						if (permissions) {
+							const perm = await enforcePermission(searchPath, "read", "Glob", permissions);
+							if (!perm.allowed) {
+								reject(new Error(perm.error!));
+								return;
+							}
+						}
 						const effectiveLimit = limit ?? DEFAULT_LIMIT;
 						const ops = customOps ?? defaultFindOperations;
 
@@ -313,8 +323,12 @@ export function createFindToolDefinition(
 	};
 }
 
-export function createFindTool(cwd: string, options?: FindToolOptions): AgentTool<typeof findSchema> {
-	return wrapToolDefinition(createFindToolDefinition(cwd, options));
+export function createFindTool(
+	cwd: string,
+	options?: FindToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof findSchema> {
+	return wrapToolDefinition(createFindToolDefinition(cwd, options, permissions));
 }
 
 /** Default find tool using process.cwd() for backwards compatibility. */

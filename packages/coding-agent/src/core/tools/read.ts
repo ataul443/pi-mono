@@ -9,6 +9,8 @@ import { getLanguageFromPath, highlightCode } from "../../modes/interactive/them
 import { formatDimensionNote, resizeImage } from "../../utils/image-resize.js";
 import { detectSupportedImageMimeTypeFromFile } from "../../utils/mime.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
+import { enforcePermission } from "../permissions/enforce.js";
+import type { PermissionContext } from "../permissions/types.js";
 import { resolveReadPath } from "./path-utils.js";
 import { getTextOutput, invalidArgText, replaceTabs, shortenPath, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -137,6 +139,7 @@ const readToolDescription = `Reads a file from the local filesystem. You can acc
 export function createReadToolDefinition(
 	cwd: string,
 	options?: ReadToolOptions,
+	permissions?: PermissionContext,
 ): ToolDefinition<typeof readSchema, ReadToolDetails | undefined> {
 	const autoResizeImages = options?.autoResizeImages ?? true;
 	const ops = options?.operations ?? defaultReadOperations;
@@ -155,6 +158,11 @@ export function createReadToolDefinition(
 			_ctx?,
 		) {
 			const absolutePath = resolveReadPath(path, cwd);
+			if (permissions) {
+				const perm = await enforcePermission(absolutePath, "read", "Read", permissions);
+				if (!perm.allowed)
+					return { content: [{ type: "text", text: perm.error! }], isError: true, details: undefined };
+			}
 			return new Promise<{ content: (TextContent | ImageContent)[]; details: ReadToolDetails | undefined }>(
 				(resolve, reject) => {
 					if (signal?.aborted) {
@@ -283,8 +291,12 @@ export function createReadToolDefinition(
 	};
 }
 
-export function createReadTool(cwd: string, options?: ReadToolOptions): AgentTool<typeof readSchema> {
-	return wrapToolDefinition(createReadToolDefinition(cwd, options));
+export function createReadTool(
+	cwd: string,
+	options?: ReadToolOptions,
+	permissions?: PermissionContext,
+): AgentTool<typeof readSchema> {
+	return wrapToolDefinition(createReadToolDefinition(cwd, options, permissions));
 }
 
 /** Default read tool using process.cwd() for backwards compatibility. */

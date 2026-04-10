@@ -9,6 +9,7 @@ import type { ExtensionRunner, LoadExtensionsResult, SessionStartEvent, ToolDefi
 import { convertToLlm } from "./messages.js";
 import { ModelRegistry } from "./model-registry.js";
 import { findInitialModel } from "./model-resolver.js";
+import type { WorkingDirectorySet } from "./permissions/types.js";
 import type { ResourceLoader } from "./resource-loader.js";
 import { DefaultResourceLoader } from "./resource-loader.js";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.js";
@@ -72,6 +73,8 @@ export interface CreateAgentSessionOptions {
 	settingsManager?: SettingsManager;
 	/** Session start event metadata for extension runtime startup. */
 	sessionStartEvent?: SessionStartEvent;
+	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
+	workingDirs?: WorkingDirectorySet;
 }
 
 /** Result from createAgentSession */
@@ -363,6 +366,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		initialActiveToolNames,
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
+		workingDirs: options.workingDirs,
 	});
 	const extensionsResult = resourceLoader.getExtensions();
 
