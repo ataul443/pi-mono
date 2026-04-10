@@ -37,6 +37,9 @@ function normalizeAtPrefix(filePath: string): string {
 }
 
 export function expandPath(filePath: string): string {
+	if (filePath.includes("\0")) {
+		throw new Error("Path contains null byte");
+	}
 	const normalized = normalizeUnicodeSpaces(normalizeAtPrefix(filePath));
 	if (normalized === "~") {
 		return os.homedir();
