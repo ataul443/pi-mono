@@ -58,6 +58,8 @@ export interface CreateAgentSessionFromServicesOptions {
 	customTools?: ToolDefinition[];
 	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
 	workingDirs?: WorkingDirectorySet;
+	/** When true, auto-deny all permission prompts without asking the user. */
+	autoDeny?: boolean;
 }
 
 /**
@@ -197,5 +199,6 @@ export async function createAgentSessionFromServices(
 		customTools: options.customTools,
 		sessionStartEvent: options.sessionStartEvent,
 		workingDirs: options.workingDirs,
+		autoDeny: options.autoDeny,
 	});
 }

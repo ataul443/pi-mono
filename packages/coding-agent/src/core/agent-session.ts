@@ -164,6 +164,8 @@ export interface AgentSessionConfig {
 	sessionStartEvent?: SessionStartEvent;
 	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
 	workingDirs?: WorkingDirectorySet;
+	/** When true, auto-deny all permission prompts without asking the user. */
+	autoDeny?: boolean;
 }
 
 export interface ExtensionBindings {
@@ -292,6 +294,7 @@ export class AgentSession {
 
 	// Permission enforcement
 	private _workingDirs?: WorkingDirectorySet;
+	private _autoDeny: boolean;
 	private _uiContextRef: { current?: ExtensionUIContext } = {};
 
 	// Tool registry for extension getTools/setTools
@@ -317,6 +320,7 @@ export class AgentSession {
 		this._baseToolsOverride = config.baseToolsOverride;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
 		this._workingDirs = config.workingDirs;
+		this._autoDeny = config.autoDeny ?? false;
 
 		// Always subscribe to agent events for internal handling
 		// (session persistence, extensions, auto-compaction, retry logic)
@@ -2305,13 +2309,16 @@ export class AgentSession {
 		const shellCommandPrefix = this.settingsManager.getShellCommandPrefix();
 		const uiContextRef = this._uiContextRef;
 		const workingDirs = this._workingDirs;
+		const autoDeny = this._autoDeny;
 		const permissions: PermissionContext | undefined = workingDirs
 			? {
 					workingDirs,
 					requestPermission: (req) =>
-						uiContextRef.current
-							? uiContextRef.current.requestPermission(req)
-							: Promise.resolve({ decision: "deny" as const }),
+						autoDeny
+							? Promise.resolve({ decision: "deny" as const })
+							: uiContextRef.current
+								? uiContextRef.current.requestPermission(req)
+								: Promise.resolve({ decision: "deny" as const }),
 				}
 			: undefined;
 		const baseToolDefinitions = this._baseToolsOverride

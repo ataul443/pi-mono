@@ -599,6 +599,7 @@ export async function main(args: string[]) {
 			tools: sessionOptions.tools,
 			customTools: sessionOptions.customTools,
 			workingDirs,
+			autoDeny: parsed.autoDeny,
 		});
 		const cliThinkingOverride = parsed.thinking !== undefined || cliThinkingFromModel;
 		if (created.session.model && cliThinkingOverride) {

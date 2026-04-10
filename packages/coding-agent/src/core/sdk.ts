@@ -75,6 +75,8 @@ export interface CreateAgentSessionOptions {
 	sessionStartEvent?: SessionStartEvent;
 	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
 	workingDirs?: WorkingDirectorySet;
+	/** When true, auto-deny all permission prompts without asking the user. */
+	autoDeny?: boolean;
 }
 
 /** Result from createAgentSession */
@@ -367,6 +369,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
 		workingDirs: options.workingDirs,
+		autoDeny: options.autoDeny,
 	});
 	const extensionsResult = resourceLoader.getExtensions();
 

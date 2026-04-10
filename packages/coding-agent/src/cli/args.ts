@@ -45,6 +45,7 @@ export interface Args {
 	messages: string[];
 	fileArgs: string[];
 	permissions?: boolean;
+	autoDeny?: boolean;
 	allowDirs?: string[];
 	worktree?: string;
 	/** Unknown flags (potentially extension flags) - map of flag name to value */
@@ -161,6 +162,8 @@ export function parseArgs(args: string[]): Args {
 			}
 		} else if (arg === "--permissions") {
 			result.permissions = true;
+		} else if (arg === "--auto-deny") {
+			result.autoDeny = true;
 		} else if (arg === "--allow-dir" && i + 1 < args.length) {
 			result.allowDirs = result.allowDirs ?? [];
 			result.allowDirs.push(args[++i]);
@@ -252,6 +255,7 @@ ${chalk.bold("Options:")}
   --export <file>                Export session file to HTML and exit
   --list-models [search]         List available models (with optional fuzzy search)
   --permissions                  Enable directory permission checks for file operations
+  --auto-deny                    Auto-deny all permission prompts (use with --permissions)
   --allow-dir <path>             Pre-approve an additional directory (can be repeated)
   --worktree <path>              Pre-approve a git worktree directory
   --verbose                      Force verbose startup (overrides quietStartup setting)
