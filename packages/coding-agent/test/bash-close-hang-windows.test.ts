@@ -87,7 +87,7 @@ describe.skipIf(process.platform !== "win32")("Windows child-process close handl
 		const controller = new AbortController();
 
 		try {
-			const result = await withTimeout(executeBash(command, { signal: controller.signal }), 3000, () => {
+			const result = await withTimeout(executeBash(command, undefined, { signal: controller.signal }), 3000, () => {
 				controller.abort();
 			});
 

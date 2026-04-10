@@ -1322,6 +1322,7 @@ export class InteractiveMode {
 			ui: this.createExtensionUIContext(),
 			hasUI: true,
 			cwd: this.sessionManager.getCwd(),
+			projectCwd: this.runtimeHost.cwd,
 			sessionManager: this.sessionManager,
 			modelRegistry: this.session.modelRegistry,
 			model: this.session.model,

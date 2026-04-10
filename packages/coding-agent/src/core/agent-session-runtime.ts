@@ -72,6 +72,11 @@ export class AgentSessionRuntime {
 		return this._services.cwd;
 	}
 
+	/** The effective working directory for tools and sessions (e.g. worktree path). */
+	private get sessionCwd(): string {
+		return this._session.sessionManager.getCwd();
+	}
+
 	get diagnostics(): readonly AgentSessionRuntimeDiagnostic[] {
 		return this._diagnostics;
 	}
@@ -157,7 +162,8 @@ export class AgentSessionRuntime {
 
 		const previousSessionFile = this.session.sessionFile;
 		const sessionDir = this.session.sessionManager.getSessionDir();
-		const sessionManager = SessionManager.create(this.cwd, sessionDir);
+		const effectiveCwd = this.sessionCwd;
+		const sessionManager = SessionManager.create(effectiveCwd, sessionDir);
 		if (options?.parentSession) {
 			sessionManager.newSession({ parentSession: options.parentSession });
 		}
@@ -165,7 +171,7 @@ export class AgentSessionRuntime {
 		await this.teardownCurrent();
 		this.apply(
 			await this.createRuntime({
-				cwd: this.cwd,
+				cwd: effectiveCwd,
 				agentDir: this.services.agentDir,
 				sessionManager,
 				sessionStartEvent: { type: "session_start", reason: "new", previousSessionFile },
@@ -198,12 +204,13 @@ export class AgentSessionRuntime {
 			}
 			const sessionDir = this.session.sessionManager.getSessionDir();
 			if (!selectedEntry.parentId) {
-				const sessionManager = SessionManager.create(this.cwd, sessionDir);
+				const effectiveCwd = this.sessionCwd;
+				const sessionManager = SessionManager.create(effectiveCwd, sessionDir);
 				sessionManager.newSession({ parentSession: currentSessionFile });
 				await this.teardownCurrent();
 				this.apply(
 					await this.createRuntime({
-						cwd: this.cwd,
+						cwd: effectiveCwd,
 						agentDir: this.services.agentDir,
 						sessionManager,
 						sessionStartEvent: { type: "session_start", reason: "fork", previousSessionFile },
@@ -231,6 +238,7 @@ export class AgentSessionRuntime {
 		}
 
 		const sessionManager = this.session.sessionManager;
+		const effectiveCwd = this.sessionCwd;
 		if (!selectedEntry.parentId) {
 			sessionManager.newSession({ parentSession: this.session.sessionFile });
 		} else {
@@ -239,7 +247,7 @@ export class AgentSessionRuntime {
 		await this.teardownCurrent();
 		this.apply(
 			await this.createRuntime({
-				cwd: this.cwd,
+				cwd: effectiveCwd,
 				agentDir: this.services.agentDir,
 				sessionManager,
 				sessionStartEvent: { type: "session_start", reason: "fork", previousSessionFile },

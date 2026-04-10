@@ -60,6 +60,10 @@ export interface CreateAgentSessionFromServicesOptions {
 	workingDirs?: WorkingDirectorySet;
 	/** When true, auto-deny all permission prompts without asking the user. */
 	autoDeny?: boolean;
+	/** Override cwd for tools/session (e.g. worktree path). When omitted, uses services.cwd. */
+	cwd?: string;
+	/** Project root where .zota/ config lives. Defaults to cwd when not in a worktree. */
+	projectCwd?: string;
 }
 
 /**
@@ -185,7 +189,8 @@ export async function createAgentSessionFromServices(
 	options: CreateAgentSessionFromServicesOptions,
 ): Promise<CreateAgentSessionResult> {
 	return createAgentSession({
-		cwd: options.services.cwd,
+		cwd: options.cwd ?? options.services.cwd,
+		projectCwd: options.projectCwd ?? options.services.cwd,
 		agentDir: options.services.agentDir,
 		authStorage: options.services.authStorage,
 		settingsManager: options.services.settingsManager,

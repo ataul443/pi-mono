@@ -271,8 +271,10 @@ export interface ExtensionContext {
 	ui: ExtensionUIContext;
 	/** Whether UI is available (false in print/RPC mode) */
 	hasUI: boolean;
-	/** Current working directory */
+	/** Current working directory (worktree path when --worktree is active) */
 	cwd: string;
+	/** Project root directory where .zota/ config lives. Same as cwd unless --worktree is active. */
+	projectCwd: string;
 	/** Session manager (read-only) */
 	sessionManager: ReadonlySessionManager;
 	/** Model registry for API key resolution */

@@ -77,6 +77,8 @@ export interface CreateAgentSessionOptions {
 	workingDirs?: WorkingDirectorySet;
 	/** When true, auto-deny all permission prompts without asking the user. */
 	autoDeny?: boolean;
+	/** Project root where .zota/ config lives. Defaults to cwd when not in a worktree. */
+	projectCwd?: string;
 }
 
 /** Result from createAgentSession */
@@ -361,6 +363,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		sessionManager,
 		settingsManager,
 		cwd,
+		projectCwd: options.projectCwd,
 		scopedModels: options.scopedModels,
 		resourceLoader,
 		customTools: options.customTools,

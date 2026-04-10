@@ -205,6 +205,7 @@ export class ExtensionRunner {
 	private runtime: ExtensionRuntime;
 	private uiContext: ExtensionUIContext;
 	private cwd: string;
+	private projectCwd: string;
 	private sessionManager: SessionManager;
 	private modelRegistry: ModelRegistry;
 	private errorListeners: Set<ExtensionErrorListener> = new Set();
@@ -232,11 +233,13 @@ export class ExtensionRunner {
 		cwd: string,
 		sessionManager: SessionManager,
 		modelRegistry: ModelRegistry,
+		projectCwd?: string,
 	) {
 		this.extensions = extensions;
 		this.runtime = runtime;
 		this.uiContext = noOpUIContext;
 		this.cwd = cwd;
+		this.projectCwd = projectCwd ?? cwd;
 		this.sessionManager = sessionManager;
 		this.modelRegistry = modelRegistry;
 	}
@@ -539,6 +542,7 @@ export class ExtensionRunner {
 			ui: this.uiContext,
 			hasUI: this.hasUI(),
 			cwd: this.cwd,
+			projectCwd: this.projectCwd,
 			sessionManager: this.sessionManager,
 			modelRegistry: this.modelRegistry,
 			get model() {

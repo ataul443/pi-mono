@@ -40,6 +40,7 @@ import { SessionManager } from "./core/session-manager.js";
 import { SettingsManager } from "./core/settings-manager.js";
 import { printTimings, resetTimings, time } from "./core/timings.js";
 import { allTools } from "./core/tools/index.js";
+import { createWorktree } from "./core/worktree/index.js";
 import { runMigrations, showDeprecationWarnings } from "./migrations.js";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.js";
 import { ExtensionSelectorComponent } from "./modes/interactive/components/extension-selector.js";
@@ -116,6 +117,7 @@ async function prepareInitialMessage(
 	parsed: Args,
 	autoResizeImages: boolean,
 	stdinContent?: string,
+	cwd?: string,
 ): Promise<{
 	initialMessage?: string;
 	initialImages?: ImageContent[];
@@ -124,7 +126,7 @@ async function prepareInitialMessage(
 		return buildInitialMessage({ parsed, stdinContent });
 	}
 
-	const { text, images } = await processFileArguments(parsed.fileArgs, { autoResizeImages });
+	const { text, images } = await processFileArguments(parsed.fileArgs, { autoResizeImages, cwd });
 	return buildInitialMessage({
 		parsed,
 		fileText: text,
@@ -492,9 +494,34 @@ export async function main(args: string[]) {
 	// settings, resources, provider registrations, and models must be resolved only after
 	// the target session cwd is known. The startup-cwd settings manager is used only for
 	// sessionDir lookup during session selection.
+	// Create git worktree if requested. The worktree becomes the agent's working
+	// directory and session storage key; `cwd` stays as the original directory
+	// where the user invoked pi (used for settings/extension/skill discovery).
+	let worktreeCwd: string | undefined;
+	let worktreeInfo: Awaited<ReturnType<typeof createWorktree>> | undefined;
+	if (parsed.worktree) {
+		try {
+			worktreeInfo = await createWorktree(parsed.worktree, cwd, {
+				baseBranch: parsed.baseBranch,
+			});
+			worktreeCwd = worktreeInfo.worktreePath;
+			process.chdir(worktreeCwd);
+		} catch (error) {
+			console.error(chalk.red(`Error creating worktree: ${(error as Error).message}`));
+			process.exit(1);
+		}
+	} else if (parsed.baseBranch) {
+		console.error(chalk.red("Error: --base-branch requires --worktree"));
+		process.exit(1);
+	}
+	time("worktree");
+
+	// Session manager uses worktree path (if any) so worktree sessions are stored
+	// separately and don't appear in /resume from the main project.
+	const sessionCwd = worktreeCwd ?? cwd;
 	const sessionDir = parsed.sessionDir ?? startupSettingsManager.getSessionDir();
-	let sessionManager = await createSessionManager(parsed, cwd, sessionDir, startupSettingsManager);
-	const missingSessionCwdIssue = getMissingSessionCwdIssue(sessionManager, cwd);
+	let sessionManager = await createSessionManager(parsed, sessionCwd, sessionDir, startupSettingsManager);
+	const missingSessionCwdIssue = getMissingSessionCwdIssue(sessionManager, sessionCwd);
 	if (missingSessionCwdIssue) {
 		if (appMode === "interactive") {
 			const selectedCwd = await promptForMissingSessionCwd(missingSessionCwdIssue, startupSettingsManager);
@@ -509,21 +536,28 @@ export async function main(args: string[]) {
 	}
 	time("createSessionManager");
 
+	// Resolve CLI paths relative to where the user invoked pi (original cwd),
+	// not the worktree directory.
 	const resolvedExtensionPaths = resolveCliPaths(cwd, parsed.extensions);
 	const resolvedSkillPaths = resolveCliPaths(cwd, parsed.skills);
 	const resolvedPromptTemplatePaths = resolveCliPaths(cwd, parsed.promptTemplates);
 	const resolvedThemePaths = resolveCliPaths(cwd, parsed.themes);
 	const _resolvedAllowDirs = resolveCliPaths(cwd, parsed.allowDirs);
-	const _resolvedWorktree = parsed.worktree ? resolve(cwd, parsed.worktree) : undefined;
 	const authStorage = AuthStorage.create();
+	// Capture the original project cwd for discovery (settings, extensions, skills).
+	// The runtime factory receives the session cwd (worktree path when --worktree is used)
+	// which is used for tools and session storage.
+	const projectCwd = cwd;
 	const createRuntime: CreateAgentSessionRuntimeFactory = async ({
-		cwd,
+		cwd: runtimeCwd,
 		agentDir,
 		sessionManager,
 		sessionStartEvent,
 	}) => {
+		// Services use the original project cwd for settings/extension/skill discovery
+		// (.pi/ is gitignored, so it won't exist in worktrees).
 		const services = await createAgentSessionServices({
-			cwd,
+			cwd: projectCwd,
 			agentDir,
 			authStorage,
 			extensionFlagValues: parsed.unknownFlags,
@@ -583,16 +617,19 @@ export async function main(args: string[]) {
 			for (const dir of _resolvedAllowDirs ?? []) {
 				additionalDirs.set(dir, { source: "cli" });
 			}
-			if (_resolvedWorktree) {
-				additionalDirs.set(_resolvedWorktree, { source: "cli" });
+			if (worktreeInfo) {
+				additionalDirs.set(worktreeInfo.worktreePath, { source: "cli" });
 			}
-			workingDirs = { cwd, additional: additionalDirs };
+			workingDirs = { cwd: runtimeCwd, additional: additionalDirs };
 		}
 
+		// Tools and session use runtimeCwd (worktree path when --worktree, otherwise project cwd).
 		const created = await createAgentSessionFromServices({
 			services,
 			sessionManager,
 			sessionStartEvent,
+			cwd: runtimeCwd,
+			projectCwd,
 			model: sessionOptions.model,
 			thinkingLevel: sessionOptions.thinkingLevel,
 			scopedModels: sessionOptions.scopedModels,
@@ -657,6 +694,7 @@ export async function main(args: string[]) {
 		parsed,
 		settingsManager.getImageAutoResize(),
 		stdinContent,
+		sessionCwd,
 	);
 	time("prepareInitialMessage");
 	initTheme(settingsManager.getTheme(), appMode === "interactive");

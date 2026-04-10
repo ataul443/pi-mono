@@ -53,11 +53,12 @@ export interface BashResult {
  * change output processing behavior.
  *
  * @param command - The bash command to execute
+ * @param cwd - Working directory for the command. Default: process.cwd()
  * @param options - Optional streaming callback and abort signal
  * @returns Promise resolving to execution result
  */
-export function executeBash(command: string, options?: BashExecutorOptions): Promise<BashResult> {
-	return executeBashWithOperations(command, process.cwd(), createLocalBashOperations(), options);
+export function executeBash(command: string, cwd?: string, options?: BashExecutorOptions): Promise<BashResult> {
+	return executeBashWithOperations(command, cwd ?? process.cwd(), createLocalBashOperations(), options);
 }
 
 /**
