@@ -51,5 +51,5 @@ export function flattenSlug(slug: string): string {
 }
 
 export function worktreeBranchName(slug: string): string {
-	return `worktree-${flattenSlug(slug)}`;
+	return `zota-${flattenSlug(slug)}`;
 }

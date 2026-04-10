@@ -30,20 +30,9 @@ async function getGitRoot(cwd: string): Promise<string> {
 
 async function getDefaultBranch(cwd: string): Promise<string> {
 	try {
-		const { stdout } = await execFileAsync("git", ["symbolic-ref", "refs/remotes/origin/HEAD"], { cwd });
-		// Output is like refs/remotes/origin/main
-		const parts = stdout.trim().split("/");
-		return parts[parts.length - 1] ?? "main";
+		const { stdout } = await execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
+		return stdout.trim() || "main";
 	} catch {
-		// Fall back: try main then master
-		for (const branch of ["main", "master"]) {
-			try {
-				await execFileAsync("git", ["rev-parse", "--verify", branch], { cwd });
-				return branch;
-			} catch {
-				// try next
-			}
-		}
 		return "main";
 	}
 }

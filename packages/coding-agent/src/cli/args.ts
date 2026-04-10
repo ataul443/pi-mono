@@ -47,7 +47,7 @@ export interface Args {
 	permissions?: boolean;
 	autoDeny?: boolean;
 	allowDirs?: string[];
-	worktree?: string;
+	worktree?: boolean;
 	baseBranch?: string;
 	/** Unknown flags (potentially extension flags) - map of flag name to value */
 	unknownFlags: Map<string, boolean | string>;
@@ -168,9 +168,9 @@ export function parseArgs(args: string[]): Args {
 		} else if (arg === "--allow-dir" && i + 1 < args.length) {
 			result.allowDirs = result.allowDirs ?? [];
 			result.allowDirs.push(args[++i]);
-		} else if (arg === "--worktree" && i + 1 < args.length) {
-			result.worktree = args[++i];
-		} else if (arg === "--base-branch" && i + 1 < args.length) {
+		} else if (arg === "--worktree") {
+			result.worktree = true;
+		} else if (arg === "--base-branch" && i + 1 < args.length && !args[i + 1].startsWith("-")) {
 			result.baseBranch = args[++i];
 		} else if (arg === "--verbose") {
 			result.verbose = true;
@@ -260,7 +260,7 @@ ${chalk.bold("Options:")}
   --permissions                  Enable directory permission checks for file operations
   --auto-deny                    Auto-deny all permission prompts (use with --permissions)
   --allow-dir <path>             Pre-approve an additional directory (can be repeated)
-  --worktree <slug>              Create and run in a git worktree (.zota/worktrees/<slug>)
+  --worktree                     Create and run in a git worktree (auto-generates ID)
   --base-branch <branch>         Base branch for --worktree (default: auto-detected)
   --verbose                      Force verbose startup (overrides quietStartup setting)
   --offline                      Disable startup network operations (same as PI_OFFLINE=1)
