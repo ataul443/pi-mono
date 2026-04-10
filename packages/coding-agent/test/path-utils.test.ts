@@ -22,6 +22,14 @@ describe("path-utils", () => {
 			const result = expandPath(withNBSP);
 			expect(result).toBe("file name.txt");
 		});
+
+		it("should throw on null byte in path", () => {
+			expect(() => expandPath("file\0.txt")).toThrow("Path contains null byte");
+		});
+
+		it("should not throw on normal path without null byte", () => {
+			expect(() => expandPath("normal.txt")).not.toThrow();
+		});
 	});
 
 	describe("resolveToCwd", () => {
