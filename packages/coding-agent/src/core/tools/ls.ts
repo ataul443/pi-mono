@@ -130,11 +130,7 @@ export function createLsToolDefinition(
 					try {
 						const dirPath = resolveToCwd(path || ".", cwd);
 						if (permissions) {
-							const perm = await enforcePermission(dirPath, "read", "List", permissions);
-							if (!perm.allowed) {
-								reject(new Error(perm.error!));
-								return;
-							}
+							await enforcePermission(dirPath, "read", "List", permissions);
 						}
 						const effectiveLimit = limit ?? DEFAULT_LIMIT;
 

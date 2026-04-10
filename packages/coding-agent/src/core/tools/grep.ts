@@ -188,11 +188,7 @@ export function createGrepToolDefinition(
 
 						const searchPath = resolveToCwd(searchDir || ".", cwd);
 						if (permissions) {
-							const perm = await enforcePermission(searchPath, "read", "Grep", permissions);
-							if (!perm.allowed) {
-								settle(() => resolve({ content: [{ type: "text", text: perm.error! }], details: undefined }));
-								return;
-							}
+							await enforcePermission(searchPath, "read", "Grep", permissions);
 						}
 						const ops = customOps ?? defaultGrepOperations;
 						let isDirectory: boolean;

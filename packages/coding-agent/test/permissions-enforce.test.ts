@@ -28,9 +28,7 @@ describe("enforcePermission", () => {
 	});
 
 	it("should always allow when permissions is undefined", async () => {
-		const result = await enforcePermission("/etc/passwd", "read", "read_file", undefined);
-		expect(result.allowed).toBe(true);
-		expect(result.error).toBeUndefined();
+		await expect(enforcePermission("/etc/passwd", "read", "read_file", undefined)).resolves.toBeUndefined();
 	});
 
 	it("should allow path inside CWD without prompting", async () => {
@@ -43,25 +41,21 @@ describe("enforcePermission", () => {
 			requestPermission,
 		};
 
-		const result = await enforcePermission(filePath, "read", "read_file", ctx);
-		expect(result.allowed).toBe(true);
+		await expect(enforcePermission(filePath, "read", "read_file", ctx)).resolves.toBeUndefined();
 		expect(requestPermission).not.toHaveBeenCalled();
 	});
 
 	it("should call requestPermission for path outside CWD and respect deny", async () => {
 		const ctx = makeContext(tempDir, async () => ({ decision: "deny" }));
 
-		const result = await enforcePermission("/etc/passwd", "read", "read_file", ctx);
-		expect(result.allowed).toBe(false);
-		expect(result.error).toContain("Permission denied");
+		await expect(enforcePermission("/etc/passwd", "read", "read_file", ctx)).rejects.toThrow("Permission denied");
 		expect(ctx.requestPermission).toHaveBeenCalledTimes(1);
 	});
 
 	it("should call requestPermission for path outside CWD and respect allow", async () => {
 		const ctx = makeContext(tempDir, async () => ({ decision: "allow" }));
 
-		const result = await enforcePermission("/etc/passwd", "read", "read_file", ctx);
-		expect(result.allowed).toBe(true);
+		await expect(enforcePermission("/etc/passwd", "read", "read_file", ctx)).resolves.toBeUndefined();
 		expect(ctx.requestPermission).toHaveBeenCalledTimes(1);
 	});
 
@@ -72,8 +66,7 @@ describe("enforcePermission", () => {
 			directory: approvedDir,
 		}));
 
-		const result = await enforcePermission("/etc/passwd", "read", "read_file", ctx);
-		expect(result.allowed).toBe(true);
+		await expect(enforcePermission("/etc/passwd", "read", "read_file", ctx)).resolves.toBeUndefined();
 		expect(ctx.workingDirs.additional.has(approvedDir)).toBe(true);
 		expect(ctx.workingDirs.additional.get(approvedDir)).toEqual({ source: "user_approved" });
 	});
@@ -84,18 +77,16 @@ describe("enforcePermission", () => {
 
 		const ctx = makeContext(tempDir, async () => ({ decision: "allow" }));
 
-		const result = await enforcePermission(envFile, "read", "read_file", ctx);
-		expect(result.allowed).toBe(true);
+		await expect(enforcePermission(envFile, "read", "read_file", ctx)).resolves.toBeUndefined();
 		expect(ctx.requestPermission).toHaveBeenCalledTimes(1);
 	});
 
-	it("should return error message when denied", async () => {
+	it("should throw with error message when denied", async () => {
 		const ctx = makeContext(tempDir, async () => ({ decision: "deny" }));
 
-		const result = await enforcePermission("/outside/path", "write", "write_file", ctx);
-		expect(result.allowed).toBe(false);
-		expect(result.error).toContain("Permission denied");
-		expect(result.error).toContain("/outside/path");
+		await expect(enforcePermission("/outside/path", "write", "write_file", ctx)).rejects.toThrow(
+			/Permission denied.*\/outside\/path/,
+		);
 	});
 
 	it("should pass correct tool name and operation in permission request", async () => {

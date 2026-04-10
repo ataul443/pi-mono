@@ -151,11 +151,7 @@ export function createFindToolDefinition(
 					try {
 						const searchPath = resolveToCwd(searchDir || ".", cwd);
 						if (permissions) {
-							const perm = await enforcePermission(searchPath, "read", "Glob", permissions);
-							if (!perm.allowed) {
-								reject(new Error(perm.error!));
-								return;
-							}
+							await enforcePermission(searchPath, "read", "Glob", permissions);
 						}
 						const effectiveLimit = limit ?? DEFAULT_LIMIT;
 						const ops = customOps ?? defaultFindOperations;
