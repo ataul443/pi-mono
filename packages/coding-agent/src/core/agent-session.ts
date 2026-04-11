@@ -2420,7 +2420,7 @@ export class AgentSession {
 
 		const err = message.errorMessage;
 		// Match: overloaded_error, provider returned error, rate limit, 429, 500, 502, 503, 504, service unavailable, network/connection errors, fetch failed, terminated, retry delay exceeded
-		return /overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|timed? out|timeout|terminated|retry delay/i.test(
+		return /overloaded|provider.?returned.?error|rate.?limit|too many requests|401|authentication.?error|invalid.?authentication|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|timed? out|timeout|terminated|retry delay/i.test(
 			err,
 		);
 	}
@@ -2494,6 +2494,11 @@ export class AgentSession {
 			return false;
 		}
 		this._retryAbortController = undefined;
+
+		// Reload credentials before retry in case of authentication errors (e.g. daemon refreshed token)
+		if (/401|authentication.?error|invalid.?authentication/i.test(message.errorMessage || "")) {
+			this._modelRegistry.authStorage.reload();
+		}
 
 		// Retry via continue() - use setTimeout to break out of event handler chain
 		setTimeout(() => {
