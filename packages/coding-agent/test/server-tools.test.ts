@@ -148,7 +148,7 @@ describe("server tools", () => {
 		it("has server tools in registry but not in active set", () => {
 			const { session } = createSession({
 				model: anthropicModel,
-				initialActiveToolNames: ["read", "bash", "edit", "write"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write"],
 			});
 			try {
 				const allToolNames = session.getAllTools().map((t) => t.name);
@@ -169,7 +169,7 @@ describe("server tools", () => {
 		it("does not include server tools in system prompt when not active", () => {
 			const { session } = createSession({
 				model: anthropicModel,
-				initialActiveToolNames: ["read", "bash", "edit", "write"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write"],
 			});
 			try {
 				// Server tools not active, so should not appear in the available tools section of the prompt
@@ -186,7 +186,7 @@ describe("server tools", () => {
 		it("includes server tools in active set when explicitly listed", () => {
 			const { session } = createSession({
 				model: anthropicModel,
-				initialActiveToolNames: ["read", "bash", "edit", "write", "WebSearch", "WebFetch"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write", "WebSearch", "WebFetch"],
 			});
 			try {
 				const activeToolNames = session.getActiveToolNames();
@@ -201,7 +201,7 @@ describe("server tools", () => {
 		it("includes server tools in system prompt when explicitly active", () => {
 			const { session } = createSession({
 				model: anthropicModel,
-				initialActiveToolNames: ["read", "bash", "edit", "write", "WebSearch", "WebFetch"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write", "WebSearch", "WebFetch"],
 			});
 			try {
 				expect(session.systemPrompt).toContain("WebSearch");
@@ -260,7 +260,7 @@ describe("server tools", () => {
 		it("adds server tools to registry but not active set when switching non-Anthropic -> Anthropic (explicit --tools without server tools)", async () => {
 			const { session } = createSession({
 				model: openaiModel,
-				initialActiveToolNames: ["read", "bash", "edit", "write"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write"],
 			});
 			try {
 				// Verify no server tools initially
