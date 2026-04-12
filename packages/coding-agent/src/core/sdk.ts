@@ -313,8 +313,8 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			// Respect setActiveTools: only include server tools that are in the active set.
 			const activeToolNames = new Set(agent.state.tools.map((t) => t.name));
 			const allServerTools = [
-				{ type: "web_search_20250305" as const, name: "web_search" as const },
-				{ type: "web_fetch_20250910" as const, name: "web_fetch" as const },
+				{ type: "web_search_20250305" as const, name: "WebSearch" as const },
+				{ type: "web_fetch_20250910" as const, name: "WebFetch" as const },
 			] as const;
 			const serverTools =
 				model.api === "anthropic-messages" ? allServerTools.filter((t) => activeToolNames.has(t.name)) : undefined;
