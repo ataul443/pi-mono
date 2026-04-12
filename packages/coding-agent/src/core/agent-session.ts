@@ -80,6 +80,7 @@ import { createSyntheticSourceInfo, type SourceInfo } from "./source-info.js";
 import { buildSystemPrompt } from "./system-prompt.js";
 import { type BashOperations, createLocalBashOperations } from "./tools/bash.js";
 import { createAllToolDefinitions } from "./tools/index.js";
+import { SERVER_TOOL_NAMES, serverToolDefinitions } from "./tools/server-tools.js";
 import { createToolDefinitionFromAgentTool, wrapToolDefinition } from "./tools/tool-definition-wrapper.js";
 
 // ============================================================================
@@ -1403,6 +1404,11 @@ export class AgentSession {
 		// Re-clamp thinking level for new model's capabilities
 		this.setThinkingLevel(thinkingLevel);
 
+		// Refresh tool registry to add/remove provider-specific server tools
+		if (previousModel?.api !== model.api) {
+			this._refreshToolRegistry();
+		}
+
 		await this._emitModelSelect(model, previousModel, "set");
 	}
 
@@ -1443,6 +1449,11 @@ export class AgentSession {
 		// setThinkingLevel clamps to model capabilities.
 		this.setThinkingLevel(thinkingLevel);
 
+		// Refresh tool registry to add/remove provider-specific server tools
+		if (currentModel?.api !== next.model.api) {
+			this._refreshToolRegistry();
+		}
+
 		await this._emitModelSelect(next.model, currentModel, "cycle");
 
 		return { model: next.model, thinkingLevel: this.thinkingLevel, isScoped: true };
@@ -1467,6 +1478,11 @@ export class AgentSession {
 
 		// Re-clamp thinking level for new model's capabilities
 		this.setThinkingLevel(thinkingLevel);
+
+		// Refresh tool registry to add/remove provider-specific server tools
+		if (currentModel?.api !== nextModel.api) {
+			this._refreshToolRegistry();
+		}
 
 		await this._emitModelSelect(nextModel, currentModel, "cycle");
 
@@ -2247,6 +2263,16 @@ export class AgentSession {
 				},
 			]),
 		);
+		// Add Anthropic server tools when using anthropic-messages API
+		if (this.agent.state.model?.api === "anthropic-messages") {
+			for (const definition of serverToolDefinitions) {
+				definitionRegistry.set(definition.name, {
+					definition,
+					sourceInfo: createSyntheticSourceInfo(`<server:${definition.name}>`, { source: "builtin" }),
+				});
+			}
+		}
+
 		for (const tool of allCustomTools) {
 			definitionRegistry.set(tool.definition.name, {
 				definition: tool.definition,
@@ -2280,6 +2306,12 @@ export class AgentSession {
 				wrapToolDefinition(definition),
 			]),
 		);
+		// Add server tools to the tool registry so they can be activated
+		if (this.agent.state.model?.api === "anthropic-messages") {
+			for (const definition of serverToolDefinitions) {
+				toolRegistry.set(definition.name, wrapToolDefinition(definition));
+			}
+		}
 		for (const tool of wrappedExtensionTools as AgentTool[]) {
 			toolRegistry.set(tool.name, tool);
 		}
@@ -2294,8 +2326,14 @@ export class AgentSession {
 				nextActiveToolNames.push(tool.name);
 			}
 		} else if (!options?.activeToolNames) {
+			// Auto-add newly registered tools to the active set.
+			// If --tools was explicitly set, only auto-add server tools that were in the explicit list.
+			const explicitToolNames = this._initialActiveToolNames ? new Set(this._initialActiveToolNames) : undefined;
 			for (const toolName of this._toolRegistry.keys()) {
 				if (!previousRegistryNames.has(toolName)) {
+					if (explicitToolNames && SERVER_TOOL_NAMES.has(toolName) && !explicitToolNames.has(toolName)) {
+						continue;
+					}
 					nextActiveToolNames.push(toolName);
 				}
 			}
@@ -2374,8 +2412,15 @@ export class AgentSession {
 			? Object.keys(this._baseToolsOverride)
 			: ["Read", "Bash", "Edit", "Write"];
 		const baseActiveToolNames = options.activeToolNames ?? defaultActiveToolNames;
+
+		// When no explicit --tools was set, include server tools in the initial active set
+		const activeToolNames =
+			!this._initialActiveToolNames && this.agent.state.model?.api === "anthropic-messages"
+				? [...baseActiveToolNames, ...serverToolDefinitions.map((d) => d.name)]
+				: baseActiveToolNames;
+
 		this._refreshToolRegistry({
-			activeToolNames: baseActiveToolNames,
+			activeToolNames: activeToolNames,
 			includeAllExtensionTools: options.includeAllExtensionTools,
 		});
 	}

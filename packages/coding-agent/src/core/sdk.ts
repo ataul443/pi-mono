@@ -39,6 +39,7 @@ import {
 	withFileMutationQueue,
 	writeTool,
 } from "./tools/index.js";
+import { SERVER_TOOL_NAMES } from "./tools/server-tools.js";
 
 export interface CreateAgentSessionOptions {
 	/** Working directory for project-local discovery. Default: process.cwd() */
@@ -317,7 +318,13 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			] as const;
 			const serverTools =
 				model.api === "anthropic-messages" ? allServerTools.filter((t) => activeToolNames.has(t.name)) : undefined;
-			return streamSimple(model, context, {
+
+			// Filter server tools out of regular tools — they're sent via serverTools, not as user-defined tools
+			const filteredContext = serverTools?.length
+				? { ...context, tools: context.tools?.filter((t) => !SERVER_TOOL_NAMES.has(t.name)) }
+				: context;
+
+			return streamSimple(model, filteredContext, {
 				...options,
 				apiKey: auth.apiKey,
 				headers: auth.headers || options?.headers ? { ...auth.headers, ...options?.headers } : undefined,
