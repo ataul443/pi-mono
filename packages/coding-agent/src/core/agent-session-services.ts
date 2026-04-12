@@ -55,6 +55,8 @@ export interface CreateAgentSessionFromServicesOptions {
 	thinkingLevel?: ThinkingLevel;
 	scopedModels?: Array<{ model: Model<any>; thinkingLevel?: ThinkingLevel }>;
 	tools?: Tool[];
+	/** Additional tool names to include in the initial active set (e.g. server tool names like "WebSearch"). */
+	activeToolNames?: string[];
 	customTools?: ToolDefinition[];
 	/** Working directory set for permission enforcement. When set, tools enforce path-based permissions. */
 	workingDirs?: WorkingDirectorySet;
@@ -201,6 +203,7 @@ export async function createAgentSessionFromServices(
 		thinkingLevel: options.thinkingLevel,
 		scopedModels: options.scopedModels,
 		tools: options.tools,
+		activeToolNames: options.activeToolNames,
 		customTools: options.customTools,
 		sessionStartEvent: options.sessionStartEvent,
 		workingDirs: options.workingDirs,

@@ -644,6 +644,7 @@ export async function main(args: string[]) {
 			thinkingLevel: sessionOptions.thinkingLevel,
 			scopedModels: sessionOptions.scopedModels,
 			tools: sessionOptions.tools,
+			activeToolNames: sessionOptions.activeToolNames,
 			customTools: sessionOptions.customTools,
 			workingDirs,
 			autoDeny: parsed.autoDeny,
