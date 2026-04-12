@@ -44,21 +44,21 @@ function createSession(options: { initialActiveToolNames?: string[]; model?: Mod
 
 describe("server tools", () => {
 	describe("server tool definitions", () => {
-		it("exports WebSearch and WebFetch tool names", () => {
-			expect(SERVER_TOOL_NAMES.has("WebSearch")).toBe(true);
-			expect(SERVER_TOOL_NAMES.has("WebFetch")).toBe(true);
+		it("exports web_search and web_fetch tool names", () => {
+			expect(SERVER_TOOL_NAMES.has("web_search")).toBe(true);
+			expect(SERVER_TOOL_NAMES.has("web_fetch")).toBe(true);
 			expect(SERVER_TOOL_NAMES.size).toBe(2);
 		});
 
 		it("exports tool definitions with correct names and descriptions", () => {
 			expect(serverToolDefinitions).toHaveLength(2);
 
-			const webSearch = serverToolDefinitions.find((d) => d.name === "WebSearch")!;
-			expect(webSearch.label).toBe("WebSearch");
+			const webSearch = serverToolDefinitions.find((d) => d.name === "web_search")!;
+			expect(webSearch.label).toBe("web_search");
 			expect(webSearch.promptSnippet).toBe("Search the web for current information");
 
-			const webFetch = serverToolDefinitions.find((d) => d.name === "WebFetch")!;
-			expect(webFetch.label).toBe("WebFetch");
+			const webFetch = serverToolDefinitions.find((d) => d.name === "web_fetch")!;
+			expect(webFetch.label).toBe("web_fetch");
 			expect(webFetch.promptSnippet).toBe("Fetch and read web page content");
 		});
 
@@ -78,10 +78,10 @@ describe("server tools", () => {
 				const allToolNames = session.getAllTools().map((t) => t.name);
 				const activeToolNames = session.getActiveToolNames();
 
-				expect(allToolNames).toContain("WebSearch");
-				expect(allToolNames).toContain("WebFetch");
-				expect(activeToolNames).toContain("WebSearch");
-				expect(activeToolNames).toContain("WebFetch");
+				expect(allToolNames).toContain("web_search");
+				expect(allToolNames).toContain("web_fetch");
+				expect(activeToolNames).toContain("web_search");
+				expect(activeToolNames).toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -90,8 +90,8 @@ describe("server tools", () => {
 		it("includes server tools in system prompt", () => {
 			const { session } = createSession({ model: anthropicModel });
 			try {
-				expect(session.systemPrompt).toContain("WebSearch");
-				expect(session.systemPrompt).toContain("WebFetch");
+				expect(session.systemPrompt).toContain("web_search");
+				expect(session.systemPrompt).toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -100,15 +100,15 @@ describe("server tools", () => {
 		it("has correct sourceInfo for server tools", () => {
 			const { session } = createSession({ model: anthropicModel });
 			try {
-				const webSearch = session.getAllTools().find((t) => t.name === "WebSearch");
+				const webSearch = session.getAllTools().find((t) => t.name === "web_search");
 				expect(webSearch?.sourceInfo).toMatchObject({
-					path: "<server:WebSearch>",
+					path: "<server:web_search>",
 					source: "builtin",
 				});
 
-				const webFetch = session.getAllTools().find((t) => t.name === "WebFetch");
+				const webFetch = session.getAllTools().find((t) => t.name === "web_fetch");
 				expect(webFetch?.sourceInfo).toMatchObject({
-					path: "<server:WebFetch>",
+					path: "<server:web_fetch>",
 					source: "builtin",
 				});
 			} finally {
@@ -124,10 +124,10 @@ describe("server tools", () => {
 				const allToolNames = session.getAllTools().map((t) => t.name);
 				const activeToolNames = session.getActiveToolNames();
 
-				expect(allToolNames).not.toContain("WebSearch");
-				expect(allToolNames).not.toContain("WebFetch");
-				expect(activeToolNames).not.toContain("WebSearch");
-				expect(activeToolNames).not.toContain("WebFetch");
+				expect(allToolNames).not.toContain("web_search");
+				expect(allToolNames).not.toContain("web_fetch");
+				expect(activeToolNames).not.toContain("web_search");
+				expect(activeToolNames).not.toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -136,8 +136,8 @@ describe("server tools", () => {
 		it("does not include server tools in system prompt", () => {
 			const { session } = createSession({ model: openaiModel });
 			try {
-				expect(session.systemPrompt).not.toContain("WebSearch");
-				expect(session.systemPrompt).not.toContain("WebFetch");
+				expect(session.systemPrompt).not.toContain("web_search");
+				expect(session.systemPrompt).not.toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -155,12 +155,12 @@ describe("server tools", () => {
 				const activeToolNames = session.getActiveToolNames();
 
 				// Server tools should be in the registry (getAllTools)
-				expect(allToolNames).toContain("WebSearch");
-				expect(allToolNames).toContain("WebFetch");
+				expect(allToolNames).toContain("web_search");
+				expect(allToolNames).toContain("web_fetch");
 
 				// But NOT in the active set since --tools didn't include them
-				expect(activeToolNames).not.toContain("WebSearch");
-				expect(activeToolNames).not.toContain("WebFetch");
+				expect(activeToolNames).not.toContain("web_search");
+				expect(activeToolNames).not.toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -172,10 +172,8 @@ describe("server tools", () => {
 				initialActiveToolNames: ["Read", "Bash", "Edit", "Write"],
 			});
 			try {
-				// Server tools not active, so should not appear in the available tools section of the prompt
-				// But they are still in the registry. The system prompt only lists active tools.
-				expect(session.systemPrompt).not.toContain("- WebSearch:");
-				expect(session.systemPrompt).not.toContain("- WebFetch:");
+				expect(session.systemPrompt).not.toContain("- web_search:");
+				expect(session.systemPrompt).not.toContain("- web_fetch:");
 			} finally {
 				session.dispose();
 			}
@@ -186,13 +184,13 @@ describe("server tools", () => {
 		it("includes server tools in active set when explicitly listed", () => {
 			const { session } = createSession({
 				model: anthropicModel,
-				initialActiveToolNames: ["Read", "Bash", "Edit", "Write", "WebSearch", "WebFetch"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write", "web_search", "web_fetch"],
 			});
 			try {
 				const activeToolNames = session.getActiveToolNames();
 
-				expect(activeToolNames).toContain("WebSearch");
-				expect(activeToolNames).toContain("WebFetch");
+				expect(activeToolNames).toContain("web_search");
+				expect(activeToolNames).toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -201,11 +199,11 @@ describe("server tools", () => {
 		it("includes server tools in system prompt when explicitly active", () => {
 			const { session } = createSession({
 				model: anthropicModel,
-				initialActiveToolNames: ["Read", "Bash", "Edit", "Write", "WebSearch", "WebFetch"],
+				initialActiveToolNames: ["Read", "Bash", "Edit", "Write", "web_search", "web_fetch"],
 			});
 			try {
-				expect(session.systemPrompt).toContain("WebSearch");
-				expect(session.systemPrompt).toContain("WebFetch");
+				expect(session.systemPrompt).toContain("web_search");
+				expect(session.systemPrompt).toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -217,20 +215,20 @@ describe("server tools", () => {
 			const { session } = createSession({ model: anthropicModel });
 			try {
 				// Verify server tools are present initially
-				expect(session.getActiveToolNames()).toContain("WebSearch");
-				expect(session.getActiveToolNames()).toContain("WebFetch");
+				expect(session.getActiveToolNames()).toContain("web_search");
+				expect(session.getActiveToolNames()).toContain("web_fetch");
 
 				await session.setModel(openaiModel);
 
 				const allToolNames = session.getAllTools().map((t) => t.name);
 				const activeToolNames = session.getActiveToolNames();
 
-				expect(allToolNames).not.toContain("WebSearch");
-				expect(allToolNames).not.toContain("WebFetch");
-				expect(activeToolNames).not.toContain("WebSearch");
-				expect(activeToolNames).not.toContain("WebFetch");
-				expect(session.systemPrompt).not.toContain("WebSearch");
-				expect(session.systemPrompt).not.toContain("WebFetch");
+				expect(allToolNames).not.toContain("web_search");
+				expect(allToolNames).not.toContain("web_fetch");
+				expect(activeToolNames).not.toContain("web_search");
+				expect(activeToolNames).not.toContain("web_fetch");
+				expect(session.systemPrompt).not.toContain("web_search");
+				expect(session.systemPrompt).not.toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -240,18 +238,18 @@ describe("server tools", () => {
 			const { session } = createSession({ model: openaiModel });
 			try {
 				// Verify no server tools initially
-				expect(session.getActiveToolNames()).not.toContain("WebSearch");
-				expect(session.getActiveToolNames()).not.toContain("WebFetch");
+				expect(session.getActiveToolNames()).not.toContain("web_search");
+				expect(session.getActiveToolNames()).not.toContain("web_fetch");
 
 				await session.setModel(anthropicModel);
 
 				const allToolNames = session.getAllTools().map((t) => t.name);
 				const activeToolNames = session.getActiveToolNames();
 
-				expect(allToolNames).toContain("WebSearch");
-				expect(allToolNames).toContain("WebFetch");
-				expect(activeToolNames).toContain("WebSearch");
-				expect(activeToolNames).toContain("WebFetch");
+				expect(allToolNames).toContain("web_search");
+				expect(allToolNames).toContain("web_fetch");
+				expect(activeToolNames).toContain("web_search");
+				expect(activeToolNames).toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -264,7 +262,7 @@ describe("server tools", () => {
 			});
 			try {
 				// Verify no server tools initially
-				expect(session.getAllTools().map((t) => t.name)).not.toContain("WebSearch");
+				expect(session.getAllTools().map((t) => t.name)).not.toContain("web_search");
 
 				await session.setModel(anthropicModel);
 
@@ -272,12 +270,12 @@ describe("server tools", () => {
 				const activeToolNames = session.getActiveToolNames();
 
 				// In registry
-				expect(allToolNames).toContain("WebSearch");
-				expect(allToolNames).toContain("WebFetch");
+				expect(allToolNames).toContain("web_search");
+				expect(allToolNames).toContain("web_fetch");
 
 				// But NOT active since explicit --tools didn't include them
-				expect(activeToolNames).not.toContain("WebSearch");
-				expect(activeToolNames).not.toContain("WebFetch");
+				expect(activeToolNames).not.toContain("web_search");
+				expect(activeToolNames).not.toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
@@ -287,15 +285,15 @@ describe("server tools", () => {
 			const { session } = createSession({ model: anthropicModel });
 			try {
 				const activeBeforeSwitch = session.getActiveToolNames();
-				expect(activeBeforeSwitch).toContain("WebSearch");
+				expect(activeBeforeSwitch).toContain("web_search");
 
 				// Switch to another Anthropic model (same api type)
 				const anotherAnthropic = getModel("anthropic", "claude-3-5-haiku-latest")!;
 				await session.setModel(anotherAnthropic);
 
 				// Server tools should still be present
-				expect(session.getActiveToolNames()).toContain("WebSearch");
-				expect(session.getActiveToolNames()).toContain("WebFetch");
+				expect(session.getActiveToolNames()).toContain("web_search");
+				expect(session.getActiveToolNames()).toContain("web_fetch");
 			} finally {
 				session.dispose();
 			}
