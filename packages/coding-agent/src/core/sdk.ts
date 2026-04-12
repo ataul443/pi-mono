@@ -61,6 +61,8 @@ export interface CreateAgentSessionOptions {
 
 	/** Built-in tools to use. Default: codingTools [read, bash, edit, write] */
 	tools?: Tool[];
+	/** Additional tool names to include in the initial active set (e.g. server tool names like "WebSearch"). */
+	activeToolNames?: string[];
 	/** Custom tools to register (in addition to built-in tools). */
 	customTools?: ToolDefinition[];
 
@@ -251,9 +253,12 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	}
 
 	const defaultActiveToolNames: ToolName[] = ["Read", "Bash", "Edit", "Write"];
-	const initialActiveToolNames: ToolName[] = options.tools
-		? options.tools.map((t) => t.name).filter((n): n is ToolName => n in allTools)
+	const builtinToolNames: string[] = options.tools
+		? options.tools.map((t) => t.name).filter((n) => n in allTools)
 		: defaultActiveToolNames;
+	const initialActiveToolNames: string[] = options.activeToolNames
+		? [...builtinToolNames, ...options.activeToolNames]
+		: builtinToolNames;
 
 	let agent: Agent;
 

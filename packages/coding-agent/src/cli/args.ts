@@ -6,7 +6,8 @@ import type { ThinkingLevel } from "@mariozechner/pi-agent-core";
 import chalk from "chalk";
 import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR } from "../config.js";
 import type { ExtensionFlag } from "../core/extensions/types.js";
-import { allTools, type ToolName } from "../core/tools/index.js";
+import { allTools } from "../core/tools/index.js";
+import { SERVER_TOOL_NAMES } from "../core/tools/server-tools.js";
 
 export type Mode = "text" | "json" | "rpc";
 
@@ -27,7 +28,7 @@ export interface Args {
 	fork?: string;
 	sessionDir?: string;
 	models?: string[];
-	tools?: ToolName[];
+	tools?: string[];
 	noTools?: boolean;
 	extensions?: string[];
 	noExtensions?: boolean;
@@ -108,14 +109,14 @@ export function parseArgs(args: string[]): Args {
 			result.noTools = true;
 		} else if (arg === "--tools" && i + 1 < args.length) {
 			const toolNames = args[++i].split(",").map((s) => s.trim());
-			const validTools: ToolName[] = [];
+			const validTools: string[] = [];
 			for (const name of toolNames) {
-				if (name in allTools) {
-					validTools.push(name as ToolName);
+				if (name in allTools || SERVER_TOOL_NAMES.has(name)) {
+					validTools.push(name);
 				} else {
 					result.diagnostics.push({
 						type: "warning",
-						message: `Unknown tool "${name}". Valid tools: ${Object.keys(allTools).join(", ")}`,
+						message: `Unknown tool "${name}". Valid tools: ${[...Object.keys(allTools), ...SERVER_TOOL_NAMES].join(", ")}`,
 					});
 				}
 			}
@@ -245,7 +246,7 @@ ${chalk.bold("Options:")}
                                  Supports globs (anthropic/*, *sonnet*) and fuzzy matching
   --no-tools                     Disable all built-in tools
   --tools <tools>                Comma-separated list of tools to enable (default: Read,Bash,Edit,Write)
-                                 Available: Read, Bash, Edit, Write, Grep, Glob, List
+                                 Available: Read, Bash, Edit, Write, Grep, Glob, List, WebSearch, WebFetch
   --thinking <level>             Set thinking level: off, minimal, low, medium, high, xhigh
   --extension, -e <path>         Load an extension file (can be used multiple times)
   --no-extensions, -ne           Disable extension discovery (explicit -e paths still work)

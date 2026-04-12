@@ -40,6 +40,7 @@ import { SessionManager } from "./core/session-manager.js";
 import { SettingsManager } from "./core/settings-manager.js";
 import { printTimings, resetTimings, time } from "./core/timings.js";
 import { allTools } from "./core/tools/index.js";
+import { SERVER_TOOL_NAMES } from "./core/tools/server-tools.js";
 import { createWorktree } from "./core/worktree/index.js";
 import { runMigrations, showDeprecationWarnings } from "./migrations.js";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.js";
@@ -368,16 +369,24 @@ function buildSessionOptions(
 	// (handled by caller before createAgentSession)
 
 	// Tools
+	const serverToolsFromCli = parsed.tools?.filter((name) => SERVER_TOOL_NAMES.has(name));
 	if (parsed.noTools) {
 		// --no-tools: start with no built-in tools
 		// --tools can still add specific ones back
 		if (parsed.tools && parsed.tools.length > 0) {
-			options.tools = parsed.tools.map((name) => allTools[name]);
+			options.tools = parsed.tools
+				.filter((name) => !SERVER_TOOL_NAMES.has(name))
+				.map((name) => allTools[name as keyof typeof allTools]);
 		} else {
 			options.tools = [];
 		}
 	} else if (parsed.tools) {
-		options.tools = parsed.tools.map((name) => allTools[name]);
+		options.tools = parsed.tools
+			.filter((name) => !SERVER_TOOL_NAMES.has(name))
+			.map((name) => allTools[name as keyof typeof allTools]);
+	}
+	if (serverToolsFromCli?.length) {
+		options.activeToolNames = serverToolsFromCli;
 	}
 
 	return { options, cliThinkingFromModel, diagnostics };
