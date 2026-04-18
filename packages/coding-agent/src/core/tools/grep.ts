@@ -123,7 +123,9 @@ function formatGrepResult(
 
 const grepToolDescription = `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.
 
-- ALWAYS use Grep for search tasks. NEVER invoke grep or rg as a Bash command. The Grep tool has been optimized for correct permissions and access.
+- For searching the codebase (functions, types, classes, symbols), prefer CodeSearch, CodeEdges, and CodeSymbols first — CodeSearch supports natural language queries (e.g. "auth middleware", "retry logic for webhooks") in addition to identifier names, and uses an AST-indexed symbol database that's faster and 
+  more precise than regex. Fall back to Grep only when you need string literals, comments, config values, non-code files, or patterns that don't map to symbols.
+- ALWAYS use Grep for text search tasks. NEVER invoke grep or rg as a Bash command. The Grep tool has been optimized for correct permissions and access.
 - Supports full regex syntax (e.g., "log.*Error", "functions+w+")
 - Filter files with glob parameter (e.g., "*.js", "**/*.tsx")
 - Use taskCreate tool for open-ended searches requiring multiple rounds

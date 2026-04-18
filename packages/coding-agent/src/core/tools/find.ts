@@ -113,6 +113,8 @@ function formatFindResult(
 
 const findToolDescription = `Fast file pattern matching tool that works with any codebase size. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).
 
+- For finding where a function, type, or class is defined in the codebase, prefer CodeSearch first — it supports natural language queries (e.g. "auth middleware", "retry logic for webhooks") in addition 
+  to identifier names, and returns exact file paths and line numbers for symbols. Use Glob when you need to locate files by name or path pattern, not by their code contents.
 - Supports glob patterns like "*.js", "**/*.json", or "src/**/*.spec.ts"
 - Returns matching file paths relative to the search directory
 - Use this tool when you need to find files by name patterns
