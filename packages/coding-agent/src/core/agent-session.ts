@@ -1629,7 +1629,7 @@ export class AgentSession {
 			const pathEntries = this.sessionManager.getBranch();
 			const settings = this.settingsManager.getCompactionSettings();
 
-			const preparation = prepareCompaction(pathEntries, settings);
+			let preparation = prepareCompaction(pathEntries, settings);
 			if (!preparation) {
 				// Check why we can't compact
 				const lastEntry = pathEntries[pathEntries.length - 1];
@@ -1658,6 +1658,13 @@ export class AgentSession {
 				if (result?.compaction) {
 					extensionCompaction = result.compaction;
 					fromExtension = true;
+				}
+
+				if (!extensionCompaction && result?.branchEntries) {
+					const filteredPreparation = prepareCompaction(result.branchEntries, settings);
+					if (filteredPreparation) {
+						preparation = filteredPreparation;
+					}
 				}
 			}
 
@@ -1884,7 +1891,7 @@ export class AgentSession {
 
 			const pathEntries = this.sessionManager.getBranch();
 
-			const preparation = prepareCompaction(pathEntries, settings);
+			let preparation = prepareCompaction(pathEntries, settings);
 			if (!preparation) {
 				this._emit({
 					type: "compaction_end",
@@ -1922,6 +1929,13 @@ export class AgentSession {
 				if (extensionResult?.compaction) {
 					extensionCompaction = extensionResult.compaction;
 					fromExtension = true;
+				}
+
+				if (!extensionCompaction && extensionResult?.branchEntries) {
+					const filteredPreparation = prepareCompaction(extensionResult.branchEntries, settings);
+					if (filteredPreparation) {
+						preparation = filteredPreparation;
+					}
 				}
 			}
 

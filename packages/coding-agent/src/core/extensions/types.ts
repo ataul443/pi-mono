@@ -932,6 +932,7 @@ export interface SessionBeforeForkResult {
 export interface SessionBeforeCompactResult {
 	cancel?: boolean;
 	compaction?: CompactionResult;
+	branchEntries?: SessionEntry[];
 }
 
 export interface SessionBeforeTreeResult {
